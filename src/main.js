@@ -15,8 +15,10 @@ import { renderCommandPalette } from './components/CommandPalette.js';
 import { renderFormatModal, FORMAT_CATALOG } from './components/FormatModal.js';
 import { createRoot } from 'react-dom/client';
 import { createElement } from 'react';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { StoryApp } from './scrollytelling/StoryApp.jsx';
-
+import { initSmoothScroll, scrollToTop } from './core/smooth-scroll.js';
 
 import { parseMarkdown } from './core/parser.js';
 import { SAMPLES } from './core/samples.js';
@@ -74,6 +76,11 @@ const state = {
 function initApp() {
   const app = document.getElementById('app');
   app.innerHTML = `
+    <!-- Top Scrollytelling Progress Bar for Home -->
+    <div id="home-scroll-progress"></div>
+    <!-- Cinematic Horizon Page Transition Beam -->
+    <div id="page-transition-beam"></div>
+
     ${renderNavbar()}
     <main>
       <!-- PAGE 1: Universal Hub Page (Home) -->
@@ -103,6 +110,7 @@ function initApp() {
     ${renderFormatModal()}
   `;
 
+  initSmoothScroll();
   setupToolGrid();
   setupToolConverter();
   setupFormatModal();
@@ -405,81 +413,207 @@ function setupRouter() {
   handleRoute();
 }
 
+let currentActivePageId = null;
 let storyRoot = null;
 
-function handleRoute() {
-  const hash = window.location.hash || '#/';
-  const hubPage = document.getElementById('page-hub');
-  const toolPage = document.getElementById('page-tool');
-  const storyPage = document.getElementById('page-story');
-  const toolSection = document.getElementById('tool-converter');
-  const studioSection = document.getElementById('converter');
-  const floatingPill = document.getElementById('super-floating-pill');
-  const navbar = document.querySelector('.navbar-header');
+/**
+ * Executes a cinematic, hardware-accelerated page transition
+ */
+function transitionToPage(targetPageId, switchCallback) {
+  const pages = {
+    'page-hub': document.getElementById('page-hub'),
+    'page-tool': document.getElementById('page-tool'),
+    'page-story': document.getElementById('page-story')
+  };
 
-  if (hash.startsWith('#/story')) {
-    if (hubPage) hubPage.style.display = 'none';
-    if (toolPage) toolPage.style.display = 'none';
-    if (storyPage) storyPage.style.display = 'block';
-    if (navbar) navbar.style.display = 'none';
-    if (floatingPill) floatingPill.style.display = 'none';
-    window.scrollTo({ top: 0, behavior: 'instant' });
+  const targetPage = pages[targetPageId];
+  if (!targetPage) return;
 
-    if (!storyRoot && storyPage) {
-      storyRoot = createRoot(storyPage);
-    }
-    if (storyRoot) {
-      storyRoot.render(createElement(StoryApp));
-    }
+  const beam = document.getElementById('page-transition-beam');
+
+  // Initial load: Reveal target immediately with gentle lift
+  if (!currentActivePageId) {
+    Object.keys(pages).forEach(id => {
+      if (pages[id]) pages[id].style.display = (id === targetPageId ? 'block' : 'none');
+    });
+    currentActivePageId = targetPageId;
+    if (switchCallback) switchCallback();
+    scrollToTop(true);
+
+    gsap.fromTo(targetPage,
+      { opacity: 0, y: 16 },
+      { opacity: 1, y: 0, duration: 0.45, ease: 'power2.out', clearProps: 'all', onComplete: () => ScrollTrigger.refresh() }
+    );
     return;
   }
 
-  // Restore regular layout when leaving #/story
-  if (storyPage) storyPage.style.display = 'none';
-  if (navbar) navbar.style.display = 'block';
+  // Already on this page (e.g. switching tool parameters within tool page)
+  if (currentActivePageId === targetPageId) {
+    if (switchCallback) switchCallback();
+    scrollToTop(true);
 
+    // Subtle crossfade pulse
+    gsap.fromTo(targetPage,
+      { opacity: 0.7, y: 6 },
+      { opacity: 1, y: 0, duration: 0.25, ease: 'power2.out', clearProps: 'all', onComplete: () => ScrollTrigger.refresh() }
+    );
+    return;
+  }
+
+  // Active page to new page transition
+  const currentPage = pages[currentActivePageId];
+  currentActivePageId = targetPageId;
+
+  // Kill running tweens on these elements to ensure smooth uninterrupted interruption
+  if (currentPage) gsap.killTweensOf(currentPage);
+  gsap.killTweensOf(targetPage);
+  if (beam) gsap.killTweensOf(beam);
+
+  // 1. Launch horizon beam across top
+  if (beam) {
+    gsap.fromTo(beam,
+      { width: '0%', opacity: 1 },
+      { width: '75%', duration: 0.22, ease: 'power2.out' }
+    );
+  }
+
+  // 2. Animate out current active page
+  const outTl = gsap.timeline({
+    onComplete: () => {
+      // Toggle visibility
+      if (currentPage) {
+        currentPage.style.display = 'none';
+        gsap.set(currentPage, { opacity: 1, y: 0, scale: 1 });
+      }
+      targetPage.style.display = 'block';
+
+      // Route setup
+      if (switchCallback) switchCallback();
+
+      // Reset scroll position before revealing incoming content
+      scrollToTop(true);
+
+      // Finish horizon beam
+      if (beam) {
+        gsap.to(beam, {
+          width: '100%',
+          opacity: 0,
+          duration: 0.25,
+          ease: 'power2.inOut',
+          onComplete: () => {
+            beam.style.width = '0%';
+            beam.style.opacity = '0';
+          }
+        });
+      }
+
+      // Animate in target page with buttery smooth glide
+      gsap.fromTo(targetPage,
+        { opacity: 0, y: 22, scale: 0.985 },
+        {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.42,
+          ease: 'power3.out',
+          clearProps: 'all',
+          onComplete: () => {
+            ScrollTrigger.refresh();
+          }
+        }
+      );
+    }
+  });
+
+  if (currentPage) {
+    outTl.to(currentPage, {
+      opacity: 0,
+      y: -14,
+      scale: 0.985,
+      duration: 0.2,
+      ease: 'power2.in'
+    });
+  } else {
+    outTl.progress(1);
+  }
+}
+
+function handleRoute() {
+  const hash = window.location.hash || '#/';
+  const floatingPill = document.getElementById('super-floating-pill');
+  const navbar = document.querySelector('.navbar-header');
+
+  // Case 1: Story Mode (#/story)
+  if (hash.startsWith('#/story')) {
+    if (navbar) {
+      gsap.to(navbar, { opacity: 0, y: -10, duration: 0.2, onComplete: () => { navbar.style.display = 'none'; } });
+    }
+    if (floatingPill) floatingPill.style.display = 'none';
+
+    transitionToPage('page-story', () => {
+      const storyPage = document.getElementById('page-story');
+      if (!storyRoot && storyPage) {
+        storyRoot = createRoot(storyPage);
+      }
+      if (storyRoot) {
+        storyRoot.render(createElement(StoryApp));
+      }
+    });
+    return;
+  }
+
+  // Restore Navbar when returning from Story
+  if (navbar && navbar.style.display === 'none') {
+    navbar.style.display = 'block';
+    gsap.fromTo(navbar, { opacity: 0, y: -10 }, { opacity: 1, y: 0, duration: 0.3, clearProps: 'all' });
+  }
+
+  // Case 2: Dedicated Tool Workspace (#/tool/:id)
   if (hash.startsWith('#/tool/')) {
     const toolId = hash.replace('#/tool/', '').trim();
     const tool = getToolById(toolId);
 
     if (tool) {
-      // Show Tool Page, Hide Hub Page
-      if (hubPage) hubPage.style.display = 'none';
-      if (toolPage) toolPage.style.display = 'block';
-      window.scrollTo({ top: 0, behavior: 'instant' });
+      transitionToPage('page-tool', () => {
+        const toolSection = document.getElementById('tool-converter');
+        const studioSection = document.getElementById('converter');
 
-      // Floating quick export pill strictly only on Live Studio
-      if (floatingPill) {
-        floatingPill.style.display = tool.isStudio ? 'inline-flex' : 'none';
-      }
-
-      if (tool.isStudio) {
-        if (toolSection) toolSection.style.display = 'none';
-        if (studioSection) studioSection.style.display = 'block';
-
-        // Check if raw toolId corresponds to a template preset (e.g., ats-resume, legal-contract)
-        const preset = TEMPLATE_PRESETS[toolId];
-        if (preset) {
-          tool.sampleKey = preset.sampleKey;
-          tool.theme = preset.theme;
+        // Floating quick export pill strictly only on Live Studio
+        if (floatingPill) {
+          floatingPill.style.display = tool.isStudio ? 'inline-flex' : 'none';
         }
 
-        activateStudioTool(tool);
-      } else {
-        if (studioSection) studioSection.style.display = 'none';
-        if (toolSection) toolSection.style.display = 'block';
-        activateUniversalTool(tool);
-      }
+        if (tool.isStudio) {
+          if (toolSection) toolSection.style.display = 'none';
+          if (studioSection) studioSection.style.display = 'block';
+
+          // Check if raw toolId corresponds to a template preset (e.g., ats-resume, legal-contract)
+          const preset = TEMPLATE_PRESETS[toolId];
+          if (preset) {
+            tool.sampleKey = preset.sampleKey;
+            tool.theme = preset.theme;
+          }
+
+          activateStudioTool(tool);
+        } else {
+          if (studioSection) studioSection.style.display = 'none';
+          if (toolSection) toolSection.style.display = 'block';
+          activateUniversalTool(tool);
+        }
+      });
       return;
     }
   }
 
-  // Default: Show Hub Home Page
-  if (hubPage) hubPage.style.display = 'block';
-  if (toolPage) toolPage.style.display = 'none';
-  if (toolSection) toolSection.style.display = 'none';
-  if (studioSection) studioSection.style.display = 'none';
+  // Case 3: Universal Hub Home Page (#/ or #/app or default)
   if (floatingPill) floatingPill.style.display = 'none';
+
+  transitionToPage('page-hub', () => {
+    const toolSection = document.getElementById('tool-converter');
+    const studioSection = document.getElementById('converter');
+    if (toolSection) toolSection.style.display = 'none';
+    if (studioSection) studioSection.style.display = 'none';
+  });
 }
 
 /**

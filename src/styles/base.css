@@ -66,16 +66,39 @@ body {
 .app-page {
   width: 100%;
   min-height: calc(100vh - 65px);
+  will-change: opacity, transform;
 }
 
 #page-tool {
   width: 100%;
-  animation: pageFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes pageFadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Scrollytelling Top Scroll Progress Bar (Home Page) */
+#home-scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  width: 0%;
+  background: linear-gradient(90deg, #6366f1 0%, #a855f7 40%, #b5ef85 85%, #38bdf8 100%);
+  z-index: 10005;
+  box-shadow: 0 0 14px rgba(181, 239, 133, 0.8), 0 0 24px rgba(99, 102, 241, 0.6);
+  pointer-events: none;
+  transition: width 0.04s linear;
+}
+
+/* Cinematic Horizon Page Transition Beam */
+#page-transition-beam {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  width: 0%;
+  background: linear-gradient(90deg, #4f46e5, #818cf8 35%, #b5ef85 70%, #ec4899 100%);
+  z-index: 10010;
+  box-shadow: 0 0 18px rgba(129, 140, 248, 0.95), 0 0 35px rgba(181, 239, 133, 0.7);
+  pointer-events: none;
+  opacity: 0;
 }
 
 /* Typography Utilities */

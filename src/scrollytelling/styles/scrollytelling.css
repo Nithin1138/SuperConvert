@@ -260,10 +260,8 @@ html.lenis, html.lenis body {
 
 /* Hardware accelerated layer */
 .gpu-accel {
-  transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
-  perspective: 1000px;
-  will-change: transform, opacity;
+  -webkit-backface-visibility: hidden;
 }
 
 /* ──────────────────────────────────────────────────────────────────────────

@@ -66,11 +66,16 @@ body {
 .app-page {
   width: 100%;
   min-height: calc(100vh - 65px);
-  will-change: opacity, transform;
 }
 
 #page-tool {
   width: 100%;
+}
+
+#page-story {
+  width: 100%;
+  transform: none !important;
+  will-change: auto !important;
 }
 
 /* Scrollytelling Top Scroll Progress Bar (Home Page) */

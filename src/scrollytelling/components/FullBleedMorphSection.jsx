@@ -20,7 +20,7 @@ export function FullBleedMorphSection() {
         scrollTrigger: {
           trigger: container,
           start: 'top top',
-          end: '+=1600',
+          end: '+=900',
           pin: stage,
           pinSpacing: true,
           scrub: 1,
@@ -51,13 +51,13 @@ export function FullBleedMorphSection() {
         }
       ).fromTo(
         content,
-        { scale: 0.9, opacity: 0.8 },
-        { scale: 1.05, opacity: 1, duration: 1, ease: 'power2.out' },
+        { scale: 0.95, opacity: 0.9 },
+        { scale: 1, opacity: 1, duration: 1, ease: 'power2.out' },
         '<'
       );
 
       // 60% - 100%: Hold stage at full-bleed so user can interact and read comfortably
-      tl.to({}, { duration: 0.6 });
+      tl.to({}, { duration: 0.5 });
     }, containerRef);
 
     return () => ctx.revert();
@@ -65,8 +65,8 @@ export function FullBleedMorphSection() {
 
   return (
     <section ref={containerRef} className="story-section story-morph-section-wrap">
-      <div ref={stageRef} className="morph-bleed-stage gpu-accel">
-        <div ref={cardRef} className="morph-bleed-card gpu-accel">
+      <div ref={stageRef} className="morph-bleed-stage">
+        <div ref={cardRef} className="morph-bleed-card">
           {/* Ambient background visual inside morphing card */}
           <div
             style={{
@@ -77,7 +77,7 @@ export function FullBleedMorphSection() {
             }}
           />
 
-          <div ref={contentRef} className="morph-bleed-content gpu-accel">
+          <div ref={contentRef} className="morph-bleed-content">
             <span
               style={{
                 fontFamily: 'var(--story-font-mono)',

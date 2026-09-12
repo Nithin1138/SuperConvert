@@ -10,18 +10,22 @@ export function CtaLaunchSection() {
       const box = boxRef.current;
       if (!box) return;
 
-      gsap.from(box, {
-        opacity: 0,
-        scale: 0.92,
-        y: 60,
-        duration: 1,
-        ease: 'power3.out',
-        scrollTrigger: {
-          trigger: box,
-          start: 'top 80%',
-          toggleActions: 'play none none reverse',
-        },
-      });
+      gsap.fromTo(
+        box,
+        { opacity: 0.8, scale: 0.96, y: 30 },
+        {
+          opacity: 1,
+          scale: 1,
+          y: 0,
+          duration: 0.7,
+          ease: 'power2.out',
+          scrollTrigger: {
+            trigger: box,
+            start: 'top 85%',
+            toggleActions: 'play none none none',
+          },
+        }
+      );
     }, sectionRef);
 
     return () => ctx.revert();

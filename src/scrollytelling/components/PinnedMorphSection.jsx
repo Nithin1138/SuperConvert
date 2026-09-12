@@ -67,7 +67,7 @@ export function PinnedMorphSection() {
         scrollTrigger: {
           trigger: container,
           start: 'top top',
-          end: '+=2400',
+          end: '+=1400',
           pin: stage,
           pinSpacing: true,
           scrub: 1,
@@ -116,7 +116,7 @@ export function PinnedMorphSection() {
 
   return (
     <section ref={containerRef} className="story-section story-pinned-section">
-      <div ref={stageRef} className="pinned-viewport-stage gpu-accel">
+      <div ref={stageRef} className="pinned-viewport-stage">
         {/* Header */}
         <div className="pinned-stage-header">
           <span className="pinned-stage-tag">{current.tag}</span>
@@ -124,7 +124,7 @@ export function PinnedMorphSection() {
         </div>
 
         {/* Morph Theater Glass Card */}
-        <div ref={cardRef} className="morph-theater-card gpu-accel" data-magnetic="true">
+        <div ref={cardRef} className="morph-theater-card" data-magnetic="true">
           {/* Left info panel */}
           <div className="morph-panel-left">
             <div>

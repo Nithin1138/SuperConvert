@@ -16,56 +16,61 @@ export function PrivacyMatrixSection() {
       // Parallax effect between columns
       gsap.fromTo(
         card,
-        { y: 80, opacity: 0.2 },
-        {
-          y: -40,
-          opacity: 1,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: section,
-            start: 'top 80%',
-            end: 'bottom 20%',
-            scrub: 1.2,
-          },
-        }
-      );
-
-      gsap.fromTo(
-        textCol,
         { y: 40 },
         {
           y: -20,
           ease: 'none',
           scrollTrigger: {
             trigger: section,
-            start: 'top 80%',
-            end: 'bottom 20%',
+            start: 'top 90%',
+            end: 'bottom 10%',
+            scrub: 1,
+          },
+        }
+      );
+
+      gsap.fromTo(
+        textCol,
+        { y: 30 },
+        {
+          y: -15,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: section,
+            start: 'top 90%',
+            end: 'bottom 10%',
             scrub: 0.8,
           },
         }
       );
 
-      // Observer-style staggered reveal of comparison rows
+      // Smooth staggered entrance of comparison rows
       const rows = card.querySelectorAll('.privacy-comparison-row');
-      gsap.from(rows, {
-        opacity: 0,
-        x: 30,
-        duration: 0.8,
-        stagger: 0.15,
-        ease: 'power3.out',
-        scrollTrigger: {
-          trigger: card,
-          start: 'top 75%',
-          toggleActions: 'play none none reverse',
-        },
-      });
+      if (rows.length > 0) {
+        gsap.fromTo(
+          rows,
+          { opacity: 0.6, x: 20 },
+          {
+            opacity: 1,
+            x: 0,
+            duration: 0.6,
+            stagger: 0.1,
+            ease: 'power2.out',
+            scrollTrigger: {
+              trigger: card,
+              start: 'top 85%',
+              toggleActions: 'play none none none',
+            },
+          }
+        );
+      }
     }, sectionRef);
 
     return () => ctx.revert();
   }, []);
 
   return (
-    <section ref={sectionRef} className="story-section story-privacy-section gpu-accel">
+    <section ref={sectionRef} className="story-section story-privacy-section">
       <div className="privacy-grid">
         {/* Left column: Narrative & Metrics */}
         <div ref={textColRef}>
@@ -98,7 +103,7 @@ export function PrivacyMatrixSection() {
         </div>
 
         {/* Right column: Interactive Security Comparison Matrix */}
-        <div ref={cardRef} className="privacy-interactive-box gpu-accel" data-magnetic="true">
+        <div ref={cardRef} className="privacy-interactive-box" data-magnetic="true">
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid var(--story-border)' }}>
             <span style={{ fontWeight: '700', fontSize: '1.1rem' }}>Metric / Feature</span>
             <div style={{ display: 'flex', gap: '32px' }}>

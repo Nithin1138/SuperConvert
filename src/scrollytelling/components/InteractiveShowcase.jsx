@@ -62,19 +62,22 @@ export function InteractiveShowcase() {
       if (!cards || cards.length === 0) return;
 
       // Staggered entrance animation
-      gsap.from(cards, {
-        opacity: 0,
-        y: 60,
-        rotateX: -15,
-        duration: 0.9,
-        stagger: 0.12,
-        ease: 'power3.out',
-        scrollTrigger: {
-          trigger: gridRef.current,
-          start: 'top 80%',
-          toggleActions: 'play none none reverse',
-        },
-      });
+      gsap.fromTo(
+        cards,
+        { opacity: 0.7, y: 30 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.6,
+          stagger: 0.08,
+          ease: 'power2.out',
+          scrollTrigger: {
+            trigger: gridRef.current,
+            start: 'top 85%',
+            toggleActions: 'play none none none',
+          },
+        }
+      );
 
       // 3D tilt tracking on mouse move
       cards.forEach((card) => {

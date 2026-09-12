@@ -17,11 +17,12 @@ export async function htmlToPdf(htmlString, filename = 'document.pdf', options =
   const {
     format = 'a4',
     orientation = 'portrait',
-    margin = 15
+    margin = 15,
+    theme = 'github'
   } = options;
 
   const container = document.createElement('div');
-  container.className = 'paper-sheet theme-super-modern';
+  container.className = `paper-sheet theme-${theme}`;
   container.style.cssText = `
     position: absolute;
     left: 0;

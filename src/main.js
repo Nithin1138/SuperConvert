@@ -59,7 +59,7 @@ import { processLatexTool } from './core/latex-engine.js';
 const state = {
   activeTab: 'studio', // 'studio' or 'batch'
   markdown: SAMPLES.techSpec,
-  theme: 'super-modern',
+  theme: 'github',
   format: 'a4',
   orientation: 'portrait',
   margin: 15,
@@ -619,7 +619,7 @@ function activateStudioTool(tool) {
   if (SAMPLES[sampleKey]) {
     state.markdown = SAMPLES[sampleKey];
     state.currentDocTitle = `${sampleKey}.md`;
-    state.theme = tool.theme || 'super-modern';
+    state.theme = tool.theme || 'github';
     state.proPrice = tool.price || '$2.99';
 
     const textarea = document.getElementById('markdown-input');
@@ -1946,8 +1946,8 @@ function setupStudioEditor() {
           state.theme = 'executive';
           if (themeSelect) themeSelect.value = 'executive';
         } else {
-          state.theme = 'super-modern';
-          if (themeSelect) themeSelect.value = 'super-modern';
+          state.theme = 'github';
+          if (themeSelect) themeSelect.value = 'github';
         }
 
         updateLivePreview();

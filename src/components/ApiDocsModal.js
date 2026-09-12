@@ -42,7 +42,7 @@ const client = new SuperConvert({ apiKey: process.env.SUPERCONVERT_KEY });
 
 const pdfBuffer = await client.compile({
   markdown: fs.readFileSync('./spec.md', 'utf-8'),
-  theme: 'super-modern',
+  theme: 'github',
   format: 'a4',
   pageNumbers: true
 });

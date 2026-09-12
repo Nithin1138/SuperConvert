@@ -93,8 +93,8 @@ export function renderConverter() {
               <div class="topbar-select-wrap" title="Visual Style Theme">
                 <span class="select-prefix">🎨</span>
                 <select id="theme-select" class="topbar-select">
-                  <option value="super-modern" selected>Super Modern</option>
-                  <option value="github">GitHub Classic</option>
+                  <option value="github" selected>GitHub Classic</option>
+                  <option value="super-modern">Super Modern</option>
                   <option value="academic">Academic Paper</option>
                   <option value="executive">Executive Brief</option>
                   <option value="midnight">Midnight Dark</option>
@@ -328,7 +328,7 @@ export function renderConverter() {
 
               <div class="preview-canvas">
                 <div id="paper-sheet-wrapper" class="paper-sheet-wrapper">
-                  <div id="paper-mount" class="paper-sheet theme-super-modern">
+                  <div id="paper-mount" class="paper-sheet theme-github">
                     <div id="paper-watermark" class="paper-watermark" style="display: none;"></div>
                     <div id="paper-content">
                       <!-- Parsed HTML will be injected here -->

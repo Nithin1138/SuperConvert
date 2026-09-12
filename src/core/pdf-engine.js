@@ -403,7 +403,7 @@ export async function generatePdfBlob(element, options = {}) {
 export async function compileCombinedPdf(files, options = {}) {
   const {
     filename = 'combined-documents.pdf',
-    theme = 'super-modern',
+    theme = 'github',
     format = 'a4',
     orientation = 'portrait',
     margin = 15,
@@ -524,7 +524,7 @@ export async function compileCombinedPdf(files, options = {}) {
 export async function compileBatchZip(files, options = {}, onProgress = () => {}) {
   const {
     zipName = 'converted-documents.zip',
-    theme = 'super-modern',
+    theme = 'github',
     format = 'a4',
     orientation = 'portrait',
     margin = 15,

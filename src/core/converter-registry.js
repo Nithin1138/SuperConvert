@@ -119,7 +119,12 @@ export const TOOLS = [
     inputAccept: '.docx,.doc,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword',
     outputFormat: '.pdf',
     isFree: true,
-    engine: 'doc'
+    engine: 'doc',
+    settings: [
+      { id: 'theme', type: 'select', label: 'Document Theme', options: ['github', 'super-modern', 'academic', 'executive', 'midnight'], default: 'github' },
+      { id: 'format', type: 'select', label: 'Paper Size', options: ['a4', 'letter', 'legal'], default: 'a4' },
+      { id: 'orientation', type: 'select', label: 'Orientation', options: ['portrait', 'landscape'], default: 'portrait' }
+    ]
   },
   {
     id: 'pdf-to-docx',

@@ -431,32 +431,25 @@ function transitionToPage(targetPageId, switchCallback) {
 
   const beam = document.getElementById('page-transition-beam');
 
-  // Initial load: Reveal target immediately with gentle lift
+  // Initial load: Reveal target immediately without any opacity: 0 delay
   if (!currentActivePageId) {
     Object.keys(pages).forEach(id => {
-      if (pages[id]) pages[id].style.display = (id === targetPageId ? 'block' : 'none');
+      if (pages[id]) {
+        pages[id].style.display = (id === targetPageId ? 'block' : 'none');
+        pages[id].style.opacity = '1';
+        pages[id].style.transform = 'none';
+      }
     });
     currentActivePageId = targetPageId;
     if (switchCallback) switchCallback();
     scrollToTop(true);
-
-    gsap.fromTo(targetPage,
-      { opacity: 0, y: 16 },
-      { opacity: 1, y: 0, duration: 0.45, ease: 'power2.out', clearProps: 'all', onComplete: () => ScrollTrigger.refresh() }
-    );
     return;
   }
 
-  // Already on this page (e.g. switching tool parameters within tool page)
+  // Already on this page
   if (currentActivePageId === targetPageId) {
     if (switchCallback) switchCallback();
     scrollToTop(true);
-
-    // Subtle crossfade pulse
-    gsap.fromTo(targetPage,
-      { opacity: 0.7, y: 6 },
-      { opacity: 1, y: 0, duration: 0.25, ease: 'power2.out', clearProps: 'all', onComplete: () => ScrollTrigger.refresh() }
-    );
     return;
   }
 
@@ -464,77 +457,53 @@ function transitionToPage(targetPageId, switchCallback) {
   const currentPage = pages[currentActivePageId];
   currentActivePageId = targetPageId;
 
-  // Kill running tweens on these elements to ensure smooth uninterrupted interruption
-  if (currentPage) gsap.killTweensOf(currentPage);
-  gsap.killTweensOf(targetPage);
-  if (beam) gsap.killTweensOf(beam);
+  if (currentPage && currentPage !== targetPage) {
+    gsap.killTweensOf([currentPage, targetPage, beam]);
 
-  // 1. Launch horizon beam across top
-  if (beam) {
-    gsap.fromTo(beam,
-      { width: '0%', opacity: 1 },
-      { width: '75%', duration: 0.22, ease: 'power2.out' }
-    );
-  }
-
-  // 2. Animate out current active page
-  const outTl = gsap.timeline({
-    onComplete: () => {
-      // Toggle visibility
-      if (currentPage) {
-        currentPage.style.display = 'none';
-        gsap.set(currentPage, { opacity: 1, y: 0, scale: 1 });
-      }
-      targetPage.style.display = 'block';
-
-      // Route setup
-      if (switchCallback) switchCallback();
-
-      // Reset scroll position before revealing incoming content
-      scrollToTop(true);
-
-      // Finish horizon beam
-      if (beam) {
-        gsap.to(beam, {
-          width: '100%',
-          opacity: 0,
-          duration: 0.25,
-          ease: 'power2.inOut',
-          onComplete: () => {
-            beam.style.width = '0%';
-            beam.style.opacity = '0';
-          }
-        });
-      }
-
-      // Animate in target page with buttery smooth glide
-      gsap.fromTo(targetPage,
-        { opacity: 0, y: 22, scale: 0.985 },
-        {
-          opacity: 1,
-          y: 0,
-          scale: 1,
-          duration: 0.42,
-          ease: 'power3.out',
-          clearProps: 'all',
-          onComplete: () => {
-            ScrollTrigger.refresh();
-          }
-        }
+    if (beam) {
+      gsap.fromTo(beam, 
+        { width: '0%', opacity: 1 }, 
+        { width: '75%', duration: 0.18, ease: 'power2.out' }
       );
     }
-  });
 
-  if (currentPage) {
-    outTl.to(currentPage, {
+    gsap.to(currentPage, {
       opacity: 0,
-      y: -14,
-      scale: 0.985,
-      duration: 0.2,
-      ease: 'power2.in'
+      y: -10,
+      duration: 0.16,
+      ease: 'power2.in',
+      onComplete: () => {
+        currentPage.style.display = 'none';
+        gsap.set(currentPage, { opacity: 1, y: 0, scale: 1 });
+
+        targetPage.style.display = 'block';
+        if (switchCallback) switchCallback();
+        scrollToTop(true);
+
+        if (beam) {
+          gsap.to(beam, {
+            width: '100%',
+            opacity: 0,
+            duration: 0.22,
+            ease: 'power2.inOut',
+            onComplete: () => {
+              beam.style.width = '0%';
+              beam.style.opacity = '0';
+            }
+          });
+        }
+
+        gsap.fromTo(targetPage,
+          { opacity: 0, y: 12 },
+          { opacity: 1, y: 0, duration: 0.28, ease: 'power2.out', clearProps: 'all' }
+        );
+      }
     });
   } else {
-    outTl.progress(1);
+    targetPage.style.display = 'block';
+    targetPage.style.opacity = '1';
+    if (switchCallback) switchCallback();
+    scrollToTop(true);
   }
 }
 

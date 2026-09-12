@@ -190,7 +190,7 @@ export function renderHero() {
             </div>
 
             <!-- Tool Grid Scroll Box -->
-            <div class="hub-grid-scroll-box" id="hub-grid-scroll-box">
+            <div class="hub-grid-scroll-box" id="hub-grid-scroll-box" data-lenis-prevent="true">
               <!-- Tool Grid -->
               <div class="hub-tool-grid" id="tool-grid">
                 ${toolCards}

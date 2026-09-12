@@ -724,9 +724,76 @@ function activateUniversalTool(tool) {
   document.getElementById('tool-output-result').style.display = 'none';
   document.getElementById('tool-convert-btn').disabled = !tool.hasTextInput;
 
-  // Clear text input
+  // Text input setup & LaTeX sample button
+  const isLatex = tool.id === 'text-to-latex' || tool.id === 'file-to-latex' || tool.engine === 'latex';
   const textInput = document.getElementById('tool-text-input');
-  if (textInput) textInput.value = '';
+  if (textInput) {
+    textInput.value = '';
+    if (isLatex) {
+      textInput.placeholder = 'Paste or type your notes, academic paper, or Markdown here...\n\nExample:\n# Modern Machine Learning\n\nDeep networks optimize parameter weights via backpropagation.\n\n## Objective Function\n$$\\mathcal{L}(\\theta) = \\frac{1}{N}\\sum_{i=1}^N \\ell(f_\\theta(x_i), y_i) + \\lambda\\|\\theta\\|^2$$\n\n- Theorem 1: Convergence bounds\n- Theorem 2: Generalization error';
+    } else {
+      textInput.placeholder = 'Paste your content here...';
+    }
+  }
+
+  // Manage sample paper preset button for LaTeX
+  const headerRight = document.querySelector('#tool-text-zone .text-zone-header');
+  const existingSampleBtn = document.getElementById('tool-latex-sample-btn');
+  if (existingSampleBtn) existingSampleBtn.remove();
+
+  if (isLatex && headerRight && textInput) {
+    const sampleBtn = document.createElement('button');
+    sampleBtn.id = 'tool-latex-sample-btn';
+    sampleBtn.type = 'button';
+    sampleBtn.className = 'latex-sample-btn';
+    sampleBtn.innerHTML = '<span>✨ Load Sample Paper</span>';
+    sampleBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      playClickSound();
+      textInput.value = `# Deep Residual Attention Networks
+
+Deep residual attention architectures combine skip connections with multi-head self-attention mechanisms to stabilize training in ultra-deep neural networks.
+
+## Mathematical Formulation
+The scaled dot-product attention equation is expressed as:
+$$\\text{Attention}(Q, K, V) = \\text{softmax}\\left(\\frac{QK^T}{\\sqrt{d_k}}\\right)V$$
+
+Where $Q, K, V$ denote query, key, and value tensors respectively.
+
+## Key Theoretical Contributions
+1. Residual connections prevent vanishing gradient degradation across deep hierarchies.
+2. Multi-head projection enables joint representation from diverse subspace positions.
+
+### Architectural Benchmark Parameters
+| Benchmark Variant | Layers | Hidden Dim | Attention Heads | Accuracy |
+|-------------------|--------|------------|-----------------|----------|
+| ResAttn-Small     | 12     | 512        | 8               | 84.6%    |
+| ResAttn-Base      | 24     | 768        | 12              | 88.2%    |
+| ResAttn-Large     | 36     | 1024       | 16              | 91.5%    |
+
+\`\`\`python
+import torch
+import torch.nn as nn
+
+class ResidualAttentionBlock(nn.Module):
+    def __init__(self, dim=768, heads=12):
+        super().__init__()
+        self.norm = nn.LayerNorm(dim)
+        self.attn = nn.MultiheadAttention(dim, heads)
+
+    def forward(self, x):
+        return x + self.attn(self.norm(x), self.norm(x), self.norm(x))[0]
+\`\`\``;
+      state.toolTextInput = textInput.value;
+      updateToolConvertButton();
+    });
+    const clearBtn = document.getElementById('tool-text-clear');
+    if (clearBtn) {
+      headerRight.insertBefore(sampleBtn, clearBtn);
+    } else {
+      headerRight.appendChild(sampleBtn);
+    }
+  }
 
   // Scroll to tool converter
   if (toolSection) toolSection.scrollIntoView({ behavior: 'smooth' });
@@ -1121,45 +1188,61 @@ function showToolResult(tool, result) {
   document.getElementById('tool-output-processing').style.display = 'none';
   document.getElementById('tool-output-result').style.display = 'flex';
 
+  const isLatex = result.isLatex || tool.engine === 'latex' || result.filename?.endsWith('.tex');
+
   // Stats
   const statsEl = document.getElementById('tool-result-stats');
   let statsHtml = '';
 
-  if (result.originalSize && result.compressedSize) {
-    statsHtml += `
-      <span class="stat-pill"><span class="stat-value">${formatFileSize(result.originalSize)}</span> Original</span>
-      <span class="stat-pill"><span class="stat-value">${formatFileSize(result.compressedSize)}</span> Output</span>
-      <span class="stat-pill savings-pill">🎯 <span class="stat-value">${result.savings}%</span> saved</span>
-    `;
-  } else if (result.blob) {
-    statsHtml += `<span class="stat-pill"><span class="stat-value">${formatFileSize(result.blob.size)}</span> Output</span>`;
-  }
-
-  if (result.originalDimensions) {
-    statsHtml += `<span class="stat-pill">${result.originalDimensions.width}×${result.originalDimensions.height} → ${result.newDimensions.width}×${result.newDimensions.height}</span>`;
-  }
-
-  if (result.rowCount !== undefined) {
-    statsHtml += `<span class="stat-pill"><span class="stat-value">${result.rowCount}</span> rows</span>`;
-  }
-
-  if (result.pageCount !== undefined) {
-    statsHtml += `<span class="stat-pill"><span class="stat-value">${result.pageCount}</span> pages</span>`;
-  }
-
-  if (result.stats?.vertices !== undefined) {
-    statsHtml += `
-      <span class="stat-pill"><span class="stat-value">${result.stats.vertices}</span> vertices</span>
-      <span class="stat-pill"><span class="stat-value">${result.stats.faces}</span> faces</span>
-    `;
-  }
-
-  if (result.isLatex || tool.engine === 'latex' || result.filename?.endsWith('.tex')) {
+  if (isLatex) {
+    if (result.originalSize) {
+      statsHtml += `<span class="stat-pill"><span class="stat-value">${formatFileSize(result.originalSize)}</span> Input</span>`;
+    }
+    if (result.blob) {
+      statsHtml += `<span class="stat-pill"><span class="stat-value">${formatFileSize(result.blob.size)}</span> LaTeX .tex</span>`;
+    }
     statsHtml += `
       <span class="stat-pill"><span class="stat-value">${result.stats?.lines || 0}</span> lines</span>
       <span class="stat-pill"><span class="stat-value">${result.stats?.words || 0}</span> words</span>
-      <span class="stat-pill savings-pill">🍃 <span class="stat-value">Overleaf</span> Verified</span>
+      <span class="stat-pill" style="background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.28); color: #34D399;">
+        <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10B981; box-shadow:0 0 6px #10B981; margin-right:4px;"></span>
+        Overleaf Ready
+      </span>
     `;
+  } else {
+    if (result.originalSize && result.compressedSize && result.savings !== undefined && result.savings !== null && !isNaN(result.savings)) {
+      statsHtml += `
+        <span class="stat-pill"><span class="stat-value">${formatFileSize(result.originalSize)}</span> Original</span>
+        <span class="stat-pill"><span class="stat-value">${formatFileSize(result.compressedSize)}</span> Output</span>
+        <span class="stat-pill savings-pill">🎯 <span class="stat-value">${result.savings}%</span> saved</span>
+      `;
+    } else if (result.originalSize && result.blob) {
+      statsHtml += `
+        <span class="stat-pill"><span class="stat-value">${formatFileSize(result.originalSize)}</span> Input</span>
+        <span class="stat-pill"><span class="stat-value">${formatFileSize(result.blob.size)}</span> Output</span>
+      `;
+    } else if (result.blob) {
+      statsHtml += `<span class="stat-pill"><span class="stat-value">${formatFileSize(result.blob.size)}</span> Output</span>`;
+    }
+
+    if (result.originalDimensions) {
+      statsHtml += `<span class="stat-pill">${result.originalDimensions.width}×${result.originalDimensions.height} → ${result.newDimensions.width}×${result.newDimensions.height}</span>`;
+    }
+
+    if (result.rowCount !== undefined) {
+      statsHtml += `<span class="stat-pill"><span class="stat-value">${result.rowCount}</span> rows</span>`;
+    }
+
+    if (result.pageCount !== undefined) {
+      statsHtml += `<span class="stat-pill"><span class="stat-value">${result.pageCount}</span> pages</span>`;
+    }
+
+    if (result.stats?.vertices !== undefined) {
+      statsHtml += `
+        <span class="stat-pill"><span class="stat-value">${result.stats.vertices}</span> vertices</span>
+        <span class="stat-pill"><span class="stat-value">${result.stats.faces}</span> faces</span>
+      `;
+    }
   }
 
   if (statsEl) statsEl.innerHTML = statsHtml;
@@ -1169,6 +1252,8 @@ function showToolResult(tool, result) {
   const copyBtn = document.getElementById('tool-copy-btn');
 
   if (previewEl) {
+    previewEl.classList.toggle('has-custom-preview', isLatex);
+
     if (result.blob && (result.blob.type.startsWith('image/') || result.filename?.match(/\.(png|jpg|jpeg|webp|gif|bmp|svg|ico|avif)$/i))) {
       // Image preview
       const imgUrl = URL.createObjectURL(result.blob);
@@ -1202,9 +1287,10 @@ function showToolResult(tool, result) {
           <iframe src="${pdfUrl}#toolbar=0&navpanes=0" style="width: 100%; height: 100%; border: none; border-radius: 8px; background: #ffffff;" title="PDF Preview"></iframe>
         </div>
       `;
-    } else if (result.isLatex || tool.engine === 'latex' || result.filename?.endsWith('.tex')) {
+    } else if (isLatex) {
       // Specialized LaTeX & Overleaf result view
-      const escaped = (result.latex || result.preview || '')
+      const rawCode = result.latex || result.preview || '';
+      const escaped = rawCode
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
@@ -1212,43 +1298,54 @@ function showToolResult(tool, result) {
       const docTemplate = state.toolSettings?.documentClass || 'article';
 
       previewEl.innerHTML = `
-        <div class="latex-result-card" style="width: 100%; display: flex; flex-direction: column; gap: 12px;">
-          <!-- Top Bar with Overleaf badge & Action Shortcuts -->
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; padding: 10px 14px; background: rgba(0, 194, 136, 0.08); border: 1px solid rgba(0, 194, 136, 0.25); border-radius: 8px;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="font-size: 1.3rem;">🍃</span>
-              <div>
-                <div style="font-weight: 700; font-size: 0.92rem; color: #10B981; display: flex; align-items: center; gap: 6px;">
-                  <span>Overleaf Ready LaTeX</span>
-                  <span style="font-size: 0.72rem; padding: 2px 7px; background: rgba(16, 185, 129, 0.18); border-radius: 4px; font-weight: 600; text-transform: uppercase;">\\documentclass{${docTemplate}}</span>
+        <div class="latex-result-card">
+          <!-- Overleaf Project Integration Strip -->
+          <div class="latex-card-banner">
+            <div class="latex-banner-left">
+              <div class="latex-overleaf-icon">🍃</div>
+              <div class="latex-banner-meta">
+                <div class="latex-banner-title-row">
+                  <span class="latex-banner-title">Overleaf Ready LaTeX</span>
+                  <span class="latex-docclass-tag">\\documentclass{${docTemplate}}</span>
                 </div>
-                <div style="font-size: 0.78rem; color: var(--text-secondary);">Directly compatible with pdfLaTeX, XeLaTeX, and LuaLaTeX</div>
+                <div class="latex-banner-subtitle">Compatible with pdfLaTeX, XeLaTeX, and LuaLaTeX</div>
               </div>
             </div>
 
-            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-              <button id="tool-export-overleaf-zip" type="button" class="btn btn-primary btn-sm" style="font-size: 0.8rem; padding: 6px 12px; background: #008060; border-color: #008060; display: inline-flex; align-items: center; gap: 6px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+            <div class="latex-banner-actions">
+              <button id="tool-export-overleaf-zip" type="button" class="btn-overleaf-zip" title="Download complete Overleaf project ZIP (main.tex + README)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
                 <span>Download Overleaf ZIP</span>
               </button>
-              <a href="https://www.overleaf.com/project" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" style="font-size: 0.8rem; padding: 6px 12px; display: inline-flex; align-items: center; gap: 4px;" title="Open Overleaf in a new tab">
+              <a href="https://www.overleaf.com/project" target="_blank" rel="noopener noreferrer" class="btn-overleaf-link" title="Open Overleaf in a new tab">
                 <span>Overleaf.com ↗</span>
               </a>
             </div>
           </div>
 
-          <!-- Code View with Line Counter -->
-          <div style="position: relative; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color, rgba(255,255,255,0.1)); background: #0f141c;">
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 0.75rem; color: var(--text-secondary);">
-              <span style="font-family: monospace; font-weight: 600;">main.tex</span>
-              <span>${result.stats?.lines || 0} lines • ${result.stats?.words || 0} words • UTF-8</span>
+          <!-- Code View with Tab Header & Quick Copy -->
+          <div class="latex-code-container">
+            <div class="latex-code-header">
+              <div class="latex-file-tab">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <span>${result.filename || 'main.tex'}</span>
+              </div>
+              <div class="latex-code-actions">
+                <span>${result.stats?.lines || 0} lines • ${result.stats?.words || 0} words • UTF-8</span>
+                <button id="latex-inline-copy" type="button" class="latex-copy-shortcut" title="Copy LaTeX code to clipboard">
+                  <span>📋 Copy</span>
+                </button>
+              </div>
             </div>
-            <pre style="margin: 0; padding: 14px; max-height: 420px; overflow: auto; font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace; font-size: 0.84rem; line-height: 1.55; color: #e2e8f0; text-align: left;"><code class="language-latex">${escaped}</code></pre>
+            <pre class="latex-code-pre"><code class="language-latex">${escaped}</code></pre>
           </div>
 
-          <!-- Tip Strip -->
-          <div style="font-size: 0.78rem; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; padding: 2px 4px;">
-            <span>💡 <strong>Overleaf Upload:</strong> In Overleaf, click <em>New Project → Upload Project</em>, drag & drop <code>${result.overleafZipName || 'project.zip'}</code>, and click <em>Recompile</em>.</span>
+          <!-- Quick Overleaf Guide Strip -->
+          <div class="latex-tips-card">
+            <span class="latex-tips-icon">💡</span>
+            <div class="latex-tips-content">
+              <strong>Overleaf 1-Click Upload:</strong> Download <code>${result.overleafZipName || 'project.zip'}</code>, then on <a href="https://www.overleaf.com/project" target="_blank" rel="noopener" style="color:#10B981; text-decoration:underline;">Overleaf</a> click <em>New Project → Upload Project</em>, drag & drop the ZIP, and click <em>Recompile</em>.
+            </div>
           </div>
         </div>
       `;
@@ -1256,6 +1353,27 @@ function showToolResult(tool, result) {
       if (copyBtn) {
         copyBtn.style.display = 'inline-flex';
         copyBtn.innerHTML = '<span>📋 Copy LaTeX Code</span>';
+      }
+
+      // Inline copy button
+      const inlineCopy = document.getElementById('latex-inline-copy');
+      if (inlineCopy) {
+        inlineCopy.addEventListener('click', async () => {
+          playClickSound();
+          try {
+            await navigator.clipboard.writeText(rawCode);
+            inlineCopy.innerHTML = '<span>✓ Copied!</span>';
+            inlineCopy.style.borderColor = '#10B981';
+            inlineCopy.style.color = '#34D399';
+            setTimeout(() => {
+              inlineCopy.innerHTML = '<span>📋 Copy</span>';
+              inlineCopy.style.borderColor = '';
+              inlineCopy.style.color = '';
+            }, 2000);
+          } catch {
+            downloadBlob(new Blob([rawCode], { type: 'text/plain' }), result.filename || 'main.tex');
+          }
+        });
       }
 
       // Hook up Overleaf ZIP download button
@@ -1320,7 +1438,7 @@ function showToolResult(tool, result) {
   // Download button text
   const downloadText = document.getElementById('tool-download-text');
   if (downloadText) {
-    downloadText.textContent = `Download ${result.filename}`;
+    downloadText.textContent = isLatex ? 'Download LaTeX (.tex)' : `Download ${result.filename}`;
   }
 }
 

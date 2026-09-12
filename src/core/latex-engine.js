@@ -690,7 +690,7 @@ export async function processLatexTool(toolId, input, settings = {}) {
         overleafZipBlob: zipBlob,
         overleafZipName: `${baseName}-overleaf.zip`,
         originalSize: input.size,
-        compressedSize: latexBlob.size,
+        outputSize: latexBlob.size,
         stats: {
           lines: latexCode.split('\n').length,
           chars: latexCode.length,
@@ -724,7 +724,7 @@ export async function processLatexTool(toolId, input, settings = {}) {
     overleafZipBlob: zipBlob,
     overleafZipName: `${baseName}-overleaf.zip`,
     originalSize: isFile ? input.size : new Blob([content]).size,
-    compressedSize: latexBlob.size,
+    outputSize: latexBlob.size,
     stats: {
       lines: latexCode.split('\n').length,
       chars: latexCode.length,

@@ -1127,3 +1127,273 @@
   }
 }
 
+/* Custom Result Preview Container override */
+.result-preview.has-custom-preview {
+  padding: 0;
+  background: transparent;
+  border: none;
+  max-height: none;
+  min-height: auto;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+/* LaTeX & Overleaf Studio Card */
+.latex-result-card {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #080A14;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.latex-card-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.09) 0%, rgba(5, 150, 105, 0.04) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.22);
+  border-radius: 10px;
+}
+
+.latex-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 220px;
+  flex: 1;
+}
+
+.latex-overleaf-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: rgba(16, 185, 129, 0.16);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  flex-shrink: 0;
+}
+
+.latex-banner-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.latex-banner-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.latex-banner-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #10B981;
+  letter-spacing: -0.01em;
+}
+
+.latex-docclass-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  background: rgba(16, 185, 129, 0.18);
+  color: #6EE7B7;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.latex-banner-subtitle {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.latex-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-overleaf-zip {
+  background: linear-gradient(135deg, #008060 0%, #00664c 100%);
+  border: 1px solid #059669;
+  color: #ffffff !important;
+  font-weight: 600;
+  font-size: 0.8rem;
+  padding: 7px 14px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 10px rgba(0, 128, 96, 0.3);
+  white-space: nowrap;
+}
+
+.btn-overleaf-zip:hover {
+  background: linear-gradient(135deg, #009670 0%, #008060 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 128, 96, 0.45);
+}
+
+.btn-overleaf-link {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-primary) !important;
+  font-weight: 500;
+  font-size: 0.8rem;
+  padding: 7px 13px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-overleaf-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #fff !important;
+}
+
+.latex-code-container {
+  position: relative;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #060810;
+  overflow: hidden;
+}
+
+.latex-code-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.025);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.latex-file-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  color: #E2E8F0;
+}
+
+.latex-code-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.latex-copy-shortcut {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  padding: 4px 9px;
+  border-radius: 5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.latex-copy-shortcut:hover {
+  background: rgba(77, 67, 254, 0.2);
+  border-color: rgba(77, 67, 254, 0.4);
+  color: #fff;
+}
+
+.latex-code-pre {
+  margin: 0;
+  padding: 16px;
+  max-height: 400px;
+  overflow: auto;
+  font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  font-size: 0.83rem;
+  line-height: 1.6;
+  color: #E2E8F0;
+  text-align: left;
+  tab-size: 2;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+.latex-tips-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(77, 67, 254, 0.05);
+  border: 1px solid rgba(77, 67, 254, 0.15);
+  border-radius: 8px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.latex-tips-icon {
+  font-size: 1.05rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.latex-tips-content strong {
+  color: var(--text-primary);
+}
+
+.latex-tips-content code {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  color: #A49EFF;
+}
+
+.latex-sample-btn {
+  font-size: 0.72rem;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  color: #34D399;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.latex-sample-btn:hover {
+  background: rgba(16, 185, 129, 0.22);
+  color: #6EE7B7;
+}
+

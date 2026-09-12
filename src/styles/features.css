@@ -1,0 +1,153 @@
+/* Features Grid: Inspired by super.money's iconic card layout */
+.features-section {
+  padding: 80px 0;
+  position: relative;
+}
+
+.features-header {
+  text-align: center;
+  margin-bottom: 50px;
+}
+
+.features-title {
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin-bottom: 12px;
+}
+
+.features-subtitle {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.feature-card {
+  border-radius: var(--radius-lg);
+  padding: 36px 30px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 280px;
+  transition: all var(--transition-normal);
+  box-shadow: var(--shadow-md);
+}
+
+.feature-card:hover {
+  transform: translateY(-4px);
+}
+
+/* 1. Primary Card: Electric Indigo */
+.feature-card-primary {
+  background: var(--brand-primary);
+  color: #FFFFFF;
+  box-shadow: 0 12px 36px rgba(77, 67, 254, 0.35);
+}
+
+.feature-card-primary .feature-icon-badge {
+  background: rgba(255, 255, 255, 0.2);
+  color: #FFFFFF;
+}
+
+/* 2. Lime Card: Inspired by super.money neon block */
+.feature-card-lime {
+  background: var(--accent-lime);
+  color: #08090E;
+  box-shadow: 0 12px 36px rgba(181, 239, 133, 0.25);
+}
+
+.feature-card-lime .feature-icon-badge {
+  background: rgba(0, 0, 0, 0.12);
+  color: #08090E;
+}
+
+.feature-card-lime .feature-card-title {
+  color: #08090E;
+}
+
+.feature-card-lime .feature-card-desc {
+  color: rgba(8, 9, 14, 0.75);
+}
+
+/* 3. Magenta Card: Inspired by super.money magenta block */
+.feature-card-magenta {
+  background: var(--accent-magenta);
+  color: #FFFFFF;
+  box-shadow: 0 12px 36px rgba(231, 43, 231, 0.25);
+}
+
+.feature-card-magenta .feature-icon-badge {
+  background: rgba(255, 255, 255, 0.2);
+  color: #FFFFFF;
+}
+
+/* 4. Glass Card */
+.feature-card-glass {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-glass);
+  grid-column: span 3;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  align-items: center;
+  gap: 32px;
+  min-height: 240px;
+}
+
+.feature-card-glass .feature-icon-badge {
+  background: rgba(77, 67, 254, 0.2);
+  color: var(--brand-primary-light);
+  border: 1px solid var(--brand-primary);
+}
+
+.feature-icon-badge {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.feature-card-title {
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 10px;
+}
+
+.feature-card-desc {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  opacity: 0.9;
+}
+
+.feature-code-preview {
+  background: #06070B;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: #38BDF8;
+  overflow-x: auto;
+}
+
+@media (max-width: 900px) {
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+  .feature-card-glass {
+    grid-column: span 1;
+    grid-template-columns: 1fr;
+  }
+}

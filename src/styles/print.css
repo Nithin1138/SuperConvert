@@ -1,0 +1,83 @@
+/* ============================================================
+   HIGH-FIDELITY PRINT STYLESHEET (For Vector PDF Generation)
+   ============================================================ */
+
+@media print {
+  /* Hide all UI elements except the document sheet */
+  html, body {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 11pt !important;
+  }
+
+  .navbar-header,
+  .hero-section,
+  .converter-header,
+  .converter-toolbar,
+  .dropzone-view,
+  .studio-pane-editor,
+  .preview-topbar,
+  .converter-actions-footer,
+  .features-section,
+  .faq-section,
+  .site-footer,
+  .modal-backdrop,
+  .hero-glow-bg {
+    display: none !important;
+  }
+
+  /* Reset layout containers for pure sheet printing */
+  .container,
+  .converter-section,
+  .converter-shell,
+  .studio-view,
+  .studio-pane,
+  .studio-pane-preview,
+  .preview-scroll-area {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .paper-sheet {
+    max-width: 100% !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Page break rules */
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  table, pre, blockquote, img, .theme-academic table {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Ensure colors and background styling remain exact */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  @page {
+    margin: 20mm;
+  }
+}

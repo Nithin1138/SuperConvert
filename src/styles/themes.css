@@ -1,0 +1,443 @@
+/* ============================================================
+   DOCUMENT THEMES (Rendered in preview and exported to PDF)
+   ============================================================ */
+
+/* 1. THEME: Super Modern (Electric Indigo) */
+.theme-super-modern {
+  background-color: #FFFFFF;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  color: #1A1F36;
+  line-height: 1.65;
+  font-size: 10.5pt;
+}
+
+.theme-super-modern h1, 
+.theme-super-modern h2, 
+.theme-super-modern h3, 
+.theme-super-modern h4 {
+  color: #0A0F29;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-top: 1.4em;
+  margin-bottom: 0.5em;
+  line-height: 1.25;
+}
+
+.theme-super-modern h1 {
+  font-size: 22pt;
+  border-bottom: 2px solid #4D43FE;
+  padding-bottom: 8px;
+  margin-top: 0;
+}
+
+.theme-super-modern h2 {
+  font-size: 15pt;
+  color: #372DE0;
+}
+
+.theme-super-modern h3 {
+  font-size: 12pt;
+}
+
+.theme-super-modern p {
+  margin-bottom: 1em;
+}
+
+.theme-super-modern a {
+  color: #4D43FE;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.theme-super-modern blockquote {
+  border-left: 4px solid #4D43FE;
+  padding: 8px 16px;
+  background: #F4F3FF;
+  border-radius: 0 8px 8px 0;
+  margin: 1.2em 0;
+  color: #3C4257;
+  font-style: italic;
+}
+
+.theme-super-modern table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.4em 0;
+  font-size: 9.5pt;
+}
+
+.theme-super-modern th, .theme-super-modern td {
+  padding: 8px 12px;
+  border: 1px solid #E3E8EE;
+  text-align: left;
+}
+
+.theme-super-modern th {
+  background: #F4F3FF;
+  color: #372DE0;
+  font-weight: 700;
+}
+
+.theme-super-modern tr:nth-child(even) {
+  background: #FAFBFC;
+}
+
+.theme-super-modern pre {
+  background: #0E1325;
+  color: #F8FAFC;
+  padding: 12px 16px;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
+  font-size: 9pt;
+  margin: 1.2em 0;
+}
+
+.theme-super-modern code:not(pre code) {
+  background: #EEF2F6;
+  color: #4D43FE;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', Consolas, monospace;
+  font-size: 0.9em;
+}
+
+.theme-super-modern ul, .theme-super-modern ol {
+  margin: 0.8em 0 1em 1.8em;
+}
+
+.theme-super-modern li {
+  margin-bottom: 0.35em;
+}
+
+.theme-super-modern hr {
+  border: none;
+  border-top: 1px solid #E3E8EE;
+  margin: 1.8em 0;
+}
+
+/* 2. THEME: GitHub Classic */
+.theme-github {
+  background-color: #FFFFFF;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  color: #24292f;
+  line-height: 1.6;
+  font-size: 10.5pt;
+}
+
+.theme-github h1,
+.theme-github h2,
+.theme-github h3,
+.theme-github h4,
+.theme-github h5,
+.theme-github h6 {
+  color: #1F2328 !important;
+  font-weight: 600;
+  line-height: 1.25;
+  margin-top: 24px;
+  margin-bottom: 16px;
+}
+
+.theme-github h1, .theme-github h2 {
+  border-bottom: 1px solid #d0d7de;
+  padding-bottom: 0.3em;
+}
+
+.theme-github h1 { font-size: 20pt; margin-top: 0; }
+.theme-github h2 { font-size: 15pt; margin-top: 1.5em; }
+.theme-github h3 { font-size: 12.5pt; margin-top: 1.2em; }
+.theme-github h4 { font-size: 11pt; }
+.theme-github h5 { font-size: 10pt; }
+.theme-github h6 { font-size: 9pt; color: #656D76 !important; }
+
+.theme-github blockquote {
+  border-left: 0.25em solid #d0d7de;
+  color: #57606a;
+  padding: 0 1em;
+  margin: 1em 0;
+}
+
+.theme-github pre {
+  background-color: #f6f8fa;
+  border-radius: 6px;
+  padding: 12px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: 9pt;
+  margin: 1em 0;
+  color: #24292f;
+}
+
+.theme-github code:not(pre code) {
+  background-color: rgba(175, 184, 193, 0.2);
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+  font-size: 85%;
+}
+
+.theme-github table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+}
+
+.theme-github th, .theme-github td {
+  padding: 6px 13px;
+  border: 1px solid #d0d7de;
+}
+
+.theme-github tr:nth-child(2n) {
+  background-color: #f6f8fa;
+}
+
+/* 3. THEME: Academic Paper (Serif & Justified) */
+.theme-academic {
+  background-color: #FFFFFF;
+  font-family: 'Charter', 'Merriweather', 'Times New Roman', Times, serif;
+  color: #111111;
+  line-height: 1.7;
+  font-size: 11pt;
+  text-align: justify;
+}
+
+.theme-academic h1,
+.theme-academic h2,
+.theme-academic h3,
+.theme-academic h4,
+.theme-academic h5,
+.theme-academic h6 {
+  color: #111111 !important;
+}
+
+.theme-academic h1 {
+  text-align: center;
+  font-size: 20pt;
+  font-weight: 800;
+  margin-bottom: 1.5em;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.theme-academic h2 {
+  font-size: 13pt;
+  font-weight: 700;
+  margin-top: 1.8em;
+  border-bottom: 1px solid #111111;
+  padding-bottom: 4px;
+}
+
+.theme-academic h3 {
+  font-size: 11.5pt;
+  font-weight: 700;
+  font-style: italic;
+  margin-top: 1.2em;
+}
+
+.theme-academic blockquote {
+  margin: 1.5em 2em;
+  font-style: italic;
+  color: #444;
+  border-left: 2px solid #555;
+  padding-left: 1em;
+}
+
+.theme-academic table {
+  width: 100%;
+  border-top: 2px solid #000;
+  border-bottom: 2px solid #000;
+  border-collapse: collapse;
+  margin: 1.8em 0;
+}
+
+.theme-academic th {
+  border-bottom: 1px solid #000;
+  padding: 6px 8px;
+  font-weight: bold;
+}
+
+.theme-academic td {
+  padding: 6px 8px;
+}
+
+.theme-academic pre {
+  background: #F3F4F6;
+  padding: 10px;
+  font-size: 8.5pt;
+  border: 1px solid #DDD;
+  margin: 1.2em 0;
+}
+
+/* 4. THEME: Executive Brief (Corporate Minimal) */
+.theme-executive {
+  background-color: #FFFFFF;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #1E293B;
+  line-height: 1.6;
+  font-size: 10pt;
+}
+
+.theme-executive h1,
+.theme-executive h2,
+.theme-executive h3,
+.theme-executive h4,
+.theme-executive h5,
+.theme-executive h6 {
+  color: #0F172A !important;
+}
+
+.theme-executive h1 {
+  font-size: 22pt;
+  color: #0F172A !important;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin-bottom: 0.8em;
+  border-bottom: 3px solid #0F172A;
+  padding-bottom: 6px;
+}
+
+.theme-executive h2 {
+  font-size: 14pt;
+  color: #334155 !important;
+  font-weight: 700;
+  margin-top: 1.6em;
+  background: #F1F5F9;
+  padding: 6px 12px;
+  border-radius: 4px;
+}
+
+.theme-executive blockquote {
+  background: #F8FAFC;
+  border-left: 4px solid #64748B;
+  padding: 12px 16px;
+  border-radius: 4px;
+  margin: 1.2em 0;
+  font-weight: 500;
+}
+
+.theme-executive table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.4em 0;
+}
+
+.theme-executive th {
+  background: #0F172A;
+  color: #FFFFFF;
+  padding: 8px 12px;
+  font-size: 9pt;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.theme-executive td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #E2E8F0;
+}
+
+/* 5. THEME: Midnight Violet (Dark Mode PDF) */
+.theme-midnight {
+  background-color: #0F111E !important;
+  color: #E2E8F0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.65;
+  font-size: 10.5pt;
+}
+
+.theme-midnight h1, .theme-midnight h2, .theme-midnight h3 {
+  color: #FFFFFF;
+}
+
+.theme-midnight h1 {
+  font-size: 22pt;
+  border-bottom: 2px solid #736BFF;
+  padding-bottom: 8px;
+}
+
+.theme-midnight h2 {
+  color: #A39BFE;
+}
+
+.theme-midnight a {
+  color: #00F5FF;
+}
+
+.theme-midnight blockquote {
+  border-left: 4px solid #736BFF;
+  background: #181B30;
+  color: #CBD5E1;
+  padding: 10px 16px;
+  border-radius: 0 6px 6px 0;
+}
+
+.theme-midnight table th {
+  background: #1E2239;
+  color: #A39BFE;
+  border: 1px solid #2B304F;
+  padding: 8px 12px;
+}
+
+.theme-midnight table td {
+  border: 1px solid #2B304F;
+  padding: 8px 12px;
+}
+
+.theme-midnight pre {
+  background: #07080E;
+  border: 1px solid #2B304F;
+  color: #38BDF8;
+  padding: 12px;
+  border-radius: 6px;
+}
+
+.theme-midnight code:not(pre code) {
+  background: #1E2239;
+  color: #38BDF8;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* ============================================================
+   UNIVERSAL PAGE-BREAK & CUT SAFEGUARDS FOR ALL THEMES
+   ============================================================ */
+.paper-sheet h1,
+.paper-sheet h2,
+.paper-sheet h3,
+.paper-sheet h4,
+.paper-sheet h5,
+.paper-sheet h6 {
+  page-break-after: avoid !important;
+  break-after: avoid !important;
+  break-inside: avoid !important;
+}
+
+.paper-sheet table,
+.paper-sheet pre,
+.paper-sheet blockquote,
+.paper-sheet img,
+.paper-sheet figure {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+
+.paper-sheet tr {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+
+.paper-sheet p,
+.paper-sheet li {
+  orphans: 3;
+  widows: 3;
+}
+
+.paper-sheet .page-break {
+  page-break-before: always !important;
+  page-break-after: always !important;
+  break-before: page !important;
+  break-after: page !important;
+  height: 1px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: block !important;
+  clear: both !important;
+  border: none !important;
+}

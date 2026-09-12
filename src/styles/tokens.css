@@ -1,0 +1,65 @@
+:root {
+  /* Brand Colors inspired by super.money */
+  --brand-primary: #4D43FE;
+  --brand-primary-light: #7068FF;
+  --brand-primary-dark: #372DE0;
+  --brand-gradient: linear-gradient(135deg, #4D43FE 0%, #7B73FF 50%, #9D96FF 100%);
+  --brand-gradient-hover: linear-gradient(135deg, #5A51FE 0%, #8A83FF 100%);
+  --brand-glow: 0 0 35px rgba(77, 67, 254, 0.45);
+  --brand-glow-lg: 0 0 60px rgba(77, 67, 254, 0.35);
+
+  /* Neon Accents */
+  --accent-lime: #B5EF85;
+  --accent-lime-dim: rgba(181, 239, 133, 0.15);
+  --accent-magenta: #E72BE7;
+  --accent-magenta-dim: rgba(231, 43, 231, 0.15);
+  --accent-cyan: #00F5FF;
+  --accent-cyan-dim: rgba(0, 245, 255, 0.15);
+  --accent-gold: #FDB73E;
+  --accent-gold-dim: rgba(253, 183, 62, 0.15);
+
+  /* Dark Theme Surfaces */
+  --bg-page: #08090E;
+  --bg-page-gradient: radial-gradient(circle at 50% 0%, #151336 0%, #08090E 60%);
+  --bg-surface: #10121F;
+  --bg-surface-elevated: #16192B;
+  --bg-surface-hover: #1E2239;
+  --bg-glass: rgba(16, 18, 31, 0.7);
+  --bg-glass-card: rgba(255, 255, 255, 0.035);
+
+  /* Borders */
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-glass: rgba(255, 255, 255, 0.12);
+  --border-active: rgba(77, 67, 254, 0.6);
+  --border-glow: 0 0 0 1px rgba(77, 67, 254, 0.5), 0 0 20px rgba(77, 67, 254, 0.25);
+
+  /* Text */
+  --text-primary: #FFFFFF;
+  --text-secondary: #9FA4C4;
+  --text-muted: #656A8A;
+  --text-inverse: #08090E;
+
+  /* Typography */
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', Menlo, monospace;
+  --font-serif: 'Charter', 'Merriweather', Georgia, serif;
+
+  /* Spacing & Radii */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --transition-fast: 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-normal: 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-smooth: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5);
+  --shadow-primary: 0 12px 30px rgba(77, 67, 254, 0.35);
+}

@@ -49,9 +49,11 @@ export const FORMAT_CATALOG = [
   {
     id: 'document',
     name: 'Document',
-    preview: 'PDF • Word • MD • PPTX • XLSX',
+    preview: 'PDF • Word • LaTeX • MD • PPTX',
     formats: [
       { id: 'pdf', name: 'PDF', ext: '.pdf', mime: 'application/pdf' },
+      { id: 'latex', name: 'LaTeX (Overleaf)', ext: '.tex', mime: 'application/x-tex' },
+      { id: 'tex', name: 'TEX', ext: '.tex', mime: 'application/x-tex' },
       { id: 'word', name: 'Word', ext: '.docx', mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
       { id: 'docx', name: 'DOCX', ext: '.docx', mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
       { id: 'msword', name: 'Microsoft Word', ext: '.docx', mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },

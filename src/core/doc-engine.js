@@ -641,6 +641,16 @@ export async function processDocTool(toolId, input, settings = {}) {
       return textToMarkdown(input, `${baseName}.md`, settings);
     }
 
+    case 'text-to-latex':
+    case 'file-to-latex':
+    case 'md-to-latex':
+    case 'docx-to-latex':
+    case 'doc-to-latex':
+    case 'latex': {
+      const { processLatexTool } = await import('./latex-engine.js');
+      return processLatexTool(toolId, input, settings);
+    }
+
     default: {
       const cleanTarget = settings.targetFormat || (toolId.includes('-to-') ? toolId.split('-to-')[1] : 'pdf');
       if (cleanTarget.includes('docx') || cleanTarget.includes('word')) {
@@ -657,6 +667,10 @@ export async function processDocTool(toolId, input, settings = {}) {
       }
       if (cleanTarget.includes('txt')) {
         return pdfToText(input, `${baseName}.txt`);
+      }
+      if (cleanTarget.includes('latex') || cleanTarget.includes('tex')) {
+        const { processLatexTool } = await import('./latex-engine.js');
+        return processLatexTool(toolId, input, settings);
       }
       return textToPdf(isFile ? await input.text() : input, `${baseName}.pdf`, settings);
     }

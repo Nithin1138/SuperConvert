@@ -35,7 +35,7 @@ SuperConvert features a universal converter hub with 43+ specialized conversion 
 
 | Category | Supported Formats | Engine Pipeline |
 | :--- | :--- | :--- |
-| **Documents** | `PDF`, `DOCX`, `Markdown (.md)`, `TXT`, `PPTX`, `XLSX`, `CSV`, `HTML` | `pdfjs-dist`, `docx`, `xlsx`, `jszip`, `marked`, `mammoth` |
+| **Documents** | `PDF`, `LaTeX (.tex)`, `DOCX`, `Markdown (.md)`, `TXT`, `PPTX`, `XLSX`, `CSV`, `HTML` | `pdfjs-dist`, `docx`, `xlsx`, `jszip`, `marked`, `mammoth`, `SuperConvert LaTeX Engine` |
 | **Images** | `JPG`, `PNG`, `WEBP`, `GIF`, `TIFF / TIF`, `AVIF`, `HEIC / HEIF`, `ICO`, `BMP`, `SVG` | HTML5 Canvas 2D, Pure JS BMP/TIFF/ICO binary encoders |
 | **3D Models** | `OBJ`, `FBX`, `STL`, `GLTF 2.0` | Wavefront OBJ/STL polygon parser, IEEE 754 float binary STL & glTF compiler |
 | **Audio** | `WAV`, `MP3`, `OGG`, `AAC`, `FLAC`, `M4A` | Web Audio API `AudioContext` & 16-bit stereo PCM RIFF WAV synthesizer |
@@ -66,7 +66,15 @@ Paste or upload raw unformatted text to transform it into clean GitHub Flavored 
 - Auto-conversion of tab-separated (TSV) and pipe-delimited text into GFM markdown tables.
 - Autolinking bare URLs and email addresses.
 
-### 4. Immersive Scrollytelling Landing Page
+### 4. Text & File to LaTeX Engine for Overleaf (`text-to-latex` & `file-to-latex`)
+Transform plain text, notes, Markdown, and Microsoft Word (`.docx`) files directly into complete, compilable LaTeX code with 1-click Overleaf project export:
+- **Math & Equation Preservation**: Smartly detects and protects inline math (`$...$`) and display equations (`$$...$$`, `\begin{equation}...\end{equation}`) without accidental double-escaping of backslashes or brackets.
+- **Booktabs Tables**: Generates clean, professional `\toprule`, `\midrule`, and `\bottomrule` table structures.
+- **Code Listings**: Automatically maps languages (`python`, `js`, `cpp`, `sql`, etc.) to `\begin{lstlisting}` with custom syntax themes.
+- **Compilable Templates**: Supports `article` (standard), `IEEEtran` (conference/journal), `report` (chapters/thesis), `beamer` (presentation slides), and `minimal` (homework/notes).
+- **1-Click Overleaf Export**: Download a pre-structured Overleaf `.zip` containing `main.tex`, `README.md`, and sample asset directory, ready to drag-and-drop into Overleaf's *New Project $\rightarrow$ Upload Project*.
+
+### 5. Immersive Scrollytelling Landing Page
 Accessible via `#/story`:
 - **Lenis Smooth Scroll Physics**: Weighted inertia scrolling (`lerp: 0.09`) locked to GSAP's internal ticker for buttery 60fps/120fps motion.
 - **Scroll Pinning & Scrubbing**: Major sections freeze in the viewport while the scrollbar advances multi-phase file morphing animations.

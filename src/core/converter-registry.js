@@ -212,6 +212,51 @@ export const TOOLS = [
       { id: 'linkify', type: 'checkbox', label: 'Auto-Link URLs', default: true }
     ]
   },
+  {
+    id: 'text-to-latex',
+    name: 'Convert Text to LaTeX (Overleaf)',
+    category: 'documents',
+    icon: '📜',
+    description: 'Transform plain text, notes, or Markdown into complete, compilable LaTeX code formatted for Overleaf with 1-click ZIP export.',
+    inputFormats: ['.txt', '.md', 'Plain Text', 'Markdown'],
+    inputAccept: '.txt,.md,.markdown,text/plain,*',
+    outputFormat: '.tex',
+    isFree: true,
+    engine: 'latex',
+    hasTextInput: true,
+    settings: [
+      { id: 'documentClass', type: 'select', label: 'Document Template', options: ['article', 'IEEEtran', 'report', 'beamer', 'minimal'], default: 'article' },
+      { id: 'fontSize', type: 'select', label: 'Font Size', options: ['10pt', '11pt', '12pt'], default: '11pt' },
+      { id: 'paperSize', type: 'select', label: 'Paper Size', options: ['a4paper', 'letterpaper'], default: 'a4paper' },
+      { id: 'margin', type: 'select', label: 'Margin', options: ['1in', '0.75in', '0.5in'], default: '1in' },
+      { id: 'includeMath', type: 'checkbox', label: 'Include Math Packages (amsmath, amssymb)', default: true },
+      { id: 'includeCodeListings', type: 'checkbox', label: 'Include Code Syntax Highlighting (listings)', default: true },
+      { id: 'includeBooktabs', type: 'checkbox', label: 'Include Professional Tables (booktabs)', default: true },
+      { id: 'twoColumn', type: 'checkbox', label: 'Two-Column Mode', default: false }
+    ]
+  },
+  {
+    id: 'file-to-latex',
+    name: 'Convert File to LaTeX (Word, MD to .tex)',
+    category: 'documents',
+    icon: '📄',
+    description: 'Convert Microsoft Word (.docx), Markdown (.md), or text files directly into clean LaTeX documents for Overleaf.',
+    inputFormats: ['.docx', '.md', '.txt', '.doc'],
+    inputAccept: '.docx,.doc,.md,.markdown,.txt,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    outputFormat: '.tex',
+    isFree: true,
+    engine: 'latex',
+    settings: [
+      { id: 'documentClass', type: 'select', label: 'Document Template', options: ['article', 'IEEEtran', 'report', 'beamer', 'minimal'], default: 'article' },
+      { id: 'fontSize', type: 'select', label: 'Font Size', options: ['10pt', '11pt', '12pt'], default: '11pt' },
+      { id: 'paperSize', type: 'select', label: 'Paper Size', options: ['a4paper', 'letterpaper'], default: 'a4paper' },
+      { id: 'margin', type: 'select', label: 'Margin', options: ['1in', '0.75in', '0.5in'], default: '1in' },
+      { id: 'includeMath', type: 'checkbox', label: 'Include Math Packages (amsmath, amssymb)', default: true },
+      { id: 'includeCodeListings', type: 'checkbox', label: 'Include Code Syntax Highlighting (listings)', default: true },
+      { id: 'includeBooktabs', type: 'checkbox', label: 'Include Professional Tables (booktabs)', default: true },
+      { id: 'twoColumn', type: 'checkbox', label: 'Two-Column Mode', default: false }
+    ]
+  },
 
   // ═══════════════════════════════════════════════
   // IMAGE TOOLS & OPTIMIZATION
@@ -737,7 +782,18 @@ const ALIAS_MAP = {
   'txt-to-md': 'text-to-md',
   'text-to-markdown': 'text-to-md',
   'txt-to-markdown': 'text-to-md',
-  'text-md': 'text-to-md'
+  'text-md': 'text-to-md',
+
+  // LaTeX & Overleaf Aliases
+  'md-to-latex': 'file-to-latex',
+  'md-to-tex': 'file-to-latex',
+  'docx-to-latex': 'file-to-latex',
+  'word-to-latex': 'file-to-latex',
+  'text-to-tex': 'text-to-latex',
+  'txt-to-latex': 'text-to-latex',
+  'latex-converter': 'text-to-latex',
+  'latex': 'text-to-latex',
+  'overleaf': 'text-to-latex'
 };
 
 /**

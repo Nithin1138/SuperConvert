@@ -31,6 +31,7 @@ import { processDocTool } from './core/doc-engine.js';
 import { processDataTool } from './core/data-engine.js';
 import { processAudioVideoTool } from './core/audio-video-engine.js';
 import { convert3DModel } from './core/three-d-engine.js';
+import { processLatexTool } from './core/latex-engine.js';
 
 // Application State
 const state = {
@@ -1060,6 +1061,9 @@ async function executeToolConversion() {
       case 'data':
         result = await processDataTool(tool.id, input, state.toolSettings);
         break;
+      case 'latex':
+        result = await processLatexTool(tool.id, input, state.toolSettings);
+        break;
       default:
         throw new Error(`Unknown engine: ${tool.engine}`);
     }
@@ -1128,6 +1132,14 @@ function showToolResult(tool, result) {
     `;
   }
 
+  if (result.isLatex || tool.engine === 'latex' || result.filename?.endsWith('.tex')) {
+    statsHtml += `
+      <span class="stat-pill"><span class="stat-value">${result.stats?.lines || 0}</span> lines</span>
+      <span class="stat-pill"><span class="stat-value">${result.stats?.words || 0}</span> words</span>
+      <span class="stat-pill savings-pill">🍃 <span class="stat-value">Overleaf</span> Verified</span>
+    `;
+  }
+
   if (statsEl) statsEl.innerHTML = statsHtml;
 
   // Preview
@@ -1168,6 +1180,72 @@ function showToolResult(tool, result) {
           <iframe src="${pdfUrl}#toolbar=0&navpanes=0" style="width: 100%; height: 100%; border: none; border-radius: 8px; background: #ffffff;" title="PDF Preview"></iframe>
         </div>
       `;
+    } else if (result.isLatex || tool.engine === 'latex' || result.filename?.endsWith('.tex')) {
+      // Specialized LaTeX & Overleaf result view
+      const escaped = (result.latex || result.preview || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+      const docTemplate = state.toolSettings?.documentClass || 'article';
+
+      previewEl.innerHTML = `
+        <div class="latex-result-card" style="width: 100%; display: flex; flex-direction: column; gap: 12px;">
+          <!-- Top Bar with Overleaf badge & Action Shortcuts -->
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; padding: 10px 14px; background: rgba(0, 194, 136, 0.08); border: 1px solid rgba(0, 194, 136, 0.25); border-radius: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 1.3rem;">🍃</span>
+              <div>
+                <div style="font-weight: 700; font-size: 0.92rem; color: #10B981; display: flex; align-items: center; gap: 6px;">
+                  <span>Overleaf Ready LaTeX</span>
+                  <span style="font-size: 0.72rem; padding: 2px 7px; background: rgba(16, 185, 129, 0.18); border-radius: 4px; font-weight: 600; text-transform: uppercase;">\\documentclass{${docTemplate}}</span>
+                </div>
+                <div style="font-size: 0.78rem; color: var(--text-secondary);">Directly compatible with pdfLaTeX, XeLaTeX, and LuaLaTeX</div>
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <button id="tool-export-overleaf-zip" type="button" class="btn btn-primary btn-sm" style="font-size: 0.8rem; padding: 6px 12px; background: #008060; border-color: #008060; display: inline-flex; align-items: center; gap: 6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+                <span>Download Overleaf ZIP</span>
+              </button>
+              <a href="https://www.overleaf.com/project" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" style="font-size: 0.8rem; padding: 6px 12px; display: inline-flex; align-items: center; gap: 4px;" title="Open Overleaf in a new tab">
+                <span>Overleaf.com ↗</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Code View with Line Counter -->
+          <div style="position: relative; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color, rgba(255,255,255,0.1)); background: #0f141c;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 0.75rem; color: var(--text-secondary);">
+              <span style="font-family: monospace; font-weight: 600;">main.tex</span>
+              <span>${result.stats?.lines || 0} lines • ${result.stats?.words || 0} words • UTF-8</span>
+            </div>
+            <pre style="margin: 0; padding: 14px; max-height: 420px; overflow: auto; font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace; font-size: 0.84rem; line-height: 1.55; color: #e2e8f0; text-align: left;"><code class="language-latex">${escaped}</code></pre>
+          </div>
+
+          <!-- Tip Strip -->
+          <div style="font-size: 0.78rem; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; padding: 2px 4px;">
+            <span>💡 <strong>Overleaf Upload:</strong> In Overleaf, click <em>New Project → Upload Project</em>, drag & drop <code>${result.overleafZipName || 'project.zip'}</code>, and click <em>Recompile</em>.</span>
+          </div>
+        </div>
+      `;
+
+      if (copyBtn) {
+        copyBtn.style.display = 'inline-flex';
+        copyBtn.innerHTML = '<span>📋 Copy LaTeX Code</span>';
+      }
+
+      // Hook up Overleaf ZIP download button
+      const zipBtn = document.getElementById('tool-export-overleaf-zip');
+      if (zipBtn && result.overleafZipBlob) {
+        zipBtn.addEventListener('click', () => {
+          playClickSound();
+          downloadBlob(result.overleafZipBlob, result.overleafZipName || `${result.filename.replace(/\.tex$/i, '')}-overleaf.zip`);
+          playSuccessChime();
+          fireCelebration();
+        });
+      }
     } else if (result.preview) {
       // Text / Markdown preview
       const escaped = result.preview
@@ -2338,8 +2416,9 @@ function selectFormatTarget(ext, formatId, formatName) {
       matchedTool = getToolById('3d-convert');
     } else if (['jpg', 'png', 'webp', 'gif', 'bmp', 'tiff', 'avif', 'ico', 'svg'].includes(targetLower)) {
       matchedTool = getToolById('image-compress-convert');
-    } else if (['pdf', 'docx', 'pptx', 'xlsx', 'txt', 'md', 'markdown'].includes(targetLower)) {
-      if (targetLower === 'pptx') matchedTool = getToolById('doc-to-pptx');
+    } else if (['pdf', 'docx', 'pptx', 'xlsx', 'txt', 'md', 'markdown', 'latex', 'tex'].includes(targetLower)) {
+      if (targetLower === 'latex' || targetLower === 'tex') matchedTool = getToolById('text-to-latex');
+      else if (targetLower === 'pptx') matchedTool = getToolById('doc-to-pptx');
       else if (targetLower === 'xlsx') matchedTool = getToolById('doc-to-xlsx');
       else if (targetLower === 'docx') matchedTool = getToolById('doc-to-docx');
       else if (targetLower === 'pdf') matchedTool = getToolById('docx-to-pdf');

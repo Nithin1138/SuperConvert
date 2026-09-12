@@ -279,9 +279,11 @@ export function minifyJs(js) {
  * Route data/code tool processing
  */
 export async function processDataTool(toolId, input, settings = {}) {
-  const isFile = input instanceof File;
-  const textContent = isFile ? await input.text() : input;
-  const baseName = isFile ? input.name.replace(/\.[^.]+$/, '') : 'output';
+  const isFile = input instanceof File || (typeof Blob !== 'undefined' && input instanceof Blob);
+  const fileName = (isFile && input.name) ? input.name : (settings.filename || 'output.txt');
+  const baseName = fileName.replace(/\.[^.]+$/, '');
+  const ext = fileName.includes('.') ? fileName.slice(fileName.lastIndexOf('.')).toLowerCase() : '';
+  const textContent = isFile ? await input.text() : String(input || '');
   
   switch (toolId) {
     case 'csv-to-json': {
@@ -290,8 +292,7 @@ export async function processDataTool(toolId, input, settings = {}) {
       return { blob, filename: `${baseName}.json`, preview: JSON.stringify(json, null, 2), rowCount: json.length };
     }
     
-    case 'data-to-json':
-    case 'csv-to-json': {
+    case 'data-to-json': {
       if (ext === '.xlsx' || ext === '.xls') {
         const XLSX = await import('xlsx');
         const buffer = await input.arrayBuffer();

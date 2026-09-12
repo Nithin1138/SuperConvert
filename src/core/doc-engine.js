@@ -295,14 +295,14 @@ export async function markdownToDocx(mdString, filename = 'document.docx') {
     } else if (/^\s*[-*+]\s/.test(line)) {
       const text = line.replace(/^\s*[-*+]\s/, '');
       children.push(new Paragraph({
-        children: parseInlineFormatting(text),
+        children: parseInlineFormatting(text, TextRun),
         bullet: { level: 0 },
         spacing: { before: 40, after: 40 }
       }));
     } else if (/^\s*\d+\.\s/.test(line)) {
       const text = line.replace(/^\s*\d+\.\s/, '');
       children.push(new Paragraph({
-        children: parseInlineFormatting(text),
+        children: parseInlineFormatting(text, TextRun),
         numbering: { reference: 'default-numbering', level: 0 },
         spacing: { before: 40, after: 40 }
       }));
@@ -310,7 +310,7 @@ export async function markdownToDocx(mdString, filename = 'document.docx') {
       children.push(new Paragraph({ children: [], spacing: { before: 80, after: 80 } }));
     } else {
       children.push(new Paragraph({
-        children: parseInlineFormatting(line),
+        children: parseInlineFormatting(line, TextRun),
         spacing: { before: 60, after: 60 }
       }));
     }
@@ -340,7 +340,7 @@ export async function markdownToDocx(mdString, filename = 'document.docx') {
 /**
  * Parse inline Markdown formatting to TextRun objects
  */
-function parseInlineFormatting(text) {
+function parseInlineFormatting(text, TextRun) {
   const runs = [];
   let remaining = text;
   
@@ -383,88 +383,190 @@ export async function htmlToDocx(htmlString, filename = 'document.docx') {
   return markdownToDocx(plainText, filename);
 }
 
+// Universal TC39 Uint8Array toHex & setFromHex polyfill for Safari, older browsers, and pdfjs-dist
+if (typeof Uint8Array !== 'undefined') {
+  if (!Uint8Array.prototype.toHex) {
+    Uint8Array.prototype.toHex = function() {
+      let hex = '';
+      for (let i = 0; i < this.length; i++) {
+        hex += this[i].toString(16).padStart(2, '0');
+      }
+      return hex;
+    };
+  }
+  if (!Uint8Array.prototype.setFromHex) {
+    Uint8Array.prototype.setFromHex = function(hex) {
+      const len = Math.min(this.length, Math.floor(hex.length / 2));
+      for (let i = 0; i < len; i++) {
+        this[i] = parseInt(hex.substr(i * 2, 2), 16);
+      }
+      return { read: len * 2, written: len };
+    };
+  }
+}
+
+let pdfjsLibInstance = null;
+
+async function getPdfJsLib() {
+  if (pdfjsLibInstance) return pdfjsLibInstance;
+
+  let lib;
+  try {
+    lib = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  } catch (_) {
+    lib = await import('pdfjs-dist');
+  }
+
+  try {
+    if (typeof window !== 'undefined' && lib.GlobalWorkerOptions) {
+      if (!lib.GlobalWorkerOptions.workerSrc) {
+        lib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${lib.version || '4.10.38'}/pdf.worker.min.mjs`;
+      }
+    }
+  } catch (_) {}
+
+  pdfjsLibInstance = lib;
+  return lib;
+}
+
+/**
+ * Robustly load a PDF document from File, Blob, ArrayBuffer, or string
+ */
+async function loadPdfDocument(pdfInput) {
+  const pdfjsLib = await getPdfJsLib();
+
+  let data;
+  if (pdfInput instanceof ArrayBuffer) {
+    data = new Uint8Array(pdfInput.slice(0));
+  } else if (pdfInput instanceof Uint8Array) {
+    data = new Uint8Array(pdfInput.buffer.slice(pdfInput.byteOffset, pdfInput.byteOffset + pdfInput.byteLength));
+  } else if (pdfInput && typeof pdfInput.arrayBuffer === 'function') {
+    const ab = await pdfInput.arrayBuffer();
+    data = new Uint8Array(ab);
+  } else if (typeof pdfInput === 'string') {
+    if (pdfInput.startsWith('data:')) {
+      const base64 = pdfInput.split(',')[1] || '';
+      const bin = atob(base64);
+      data = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) data[i] = bin.charCodeAt(i);
+    } else {
+      const encoder = new TextEncoder();
+      data = encoder.encode(pdfInput);
+    }
+  } else {
+    throw new Error('Please upload a valid PDF document');
+  }
+
+  try {
+    const loadingTask = pdfjsLib.getDocument({
+      data,
+      disableRange: true,
+      disableStream: true,
+      isEvalSupported: false
+    });
+    return await loadingTask.promise;
+  } catch (err) {
+    // If worker failed (e.g. CORS or network), retry on main thread
+    try {
+      if (pdfjsLib.GlobalWorkerOptions) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+      }
+      const fallbackTask = pdfjsLib.getDocument({
+        data,
+        disableRange: true,
+        disableStream: true,
+        isEvalSupported: false
+      });
+      return await fallbackTask.promise;
+    } catch (fallbackErr) {
+      throw new Error(`Failed to parse PDF document: ${err.message || fallbackErr.message}`);
+    }
+  }
+}
+
 /**
  * PDF → Text extraction using pdfjs-dist
  */
 export async function pdfToText(pdfFile, filename = 'extracted.txt') {
-  const pdfjsLib = await import('pdfjs-dist');
-  if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
-  }
-  
-  let arrayBuffer;
-  if (pdfFile instanceof ArrayBuffer) {
-    arrayBuffer = pdfFile;
-  } else if (pdfFile && pdfFile.arrayBuffer) {
-    arrayBuffer = await pdfFile.arrayBuffer();
-  } else {
-    throw new Error('Please upload a valid .pdf file to extract text');
+  if (typeof pdfFile === 'string' && !pdfFile.startsWith('%PDF')) {
+    const blob = new Blob([pdfFile.trim()], { type: 'text/plain;charset=utf-8;' });
+    return {
+      blob,
+      filename: filename.endsWith('.txt') ? filename : `${filename}.txt`,
+      text: pdfFile.trim(),
+      preview: pdfFile.trim(),
+      pageCount: 1
+    };
   }
 
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-  
+  const pdf = await loadPdfDocument(pdfFile);
   let fullText = '';
-  const totalPages = pdf.numPages;
-  
+  const totalPages = pdf.numPages || 1;
+
   for (let i = 1; i <= totalPages; i++) {
     const page = await pdf.getPage(i);
     const textContent = await page.getTextContent();
-    const pageText = textContent.items.map(item => item.str).join(' ');
+    const rawItems = Array.isArray(textContent?.items) ? textContent.items : [];
+    const pageText = rawItems
+      .filter(item => item && typeof item.str === 'string')
+      .map(item => item.str)
+      .join(' ');
     fullText += `--- Page ${i} of ${totalPages} ---\n${pageText}\n\n`;
   }
-  
-  const blob = new Blob([fullText.trim()], { type: 'text/plain;charset=utf-8;' });
-  return { blob, filename: filename.endsWith('.txt') ? filename : `${filename}.txt`, text: fullText.trim(), preview: fullText.trim(), pageCount: totalPages };
+
+  const cleanText = fullText.trim();
+  const blob = new Blob([cleanText], { type: 'text/plain;charset=utf-8;' });
+  return {
+    blob,
+    filename: filename.endsWith('.txt') ? filename : `${filename}.txt`,
+    text: cleanText,
+    preview: cleanText,
+    pageCount: totalPages
+  };
 }
 
 /**
  * PDF → Word (.docx) using pdfjs-dist + docx
  */
 export async function pdfToDocx(pdfFile, filename = 'document.docx') {
-  const pdfjsLib = await import('pdfjs-dist');
-  if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+  if (typeof pdfFile === 'string' && !pdfFile.startsWith('%PDF')) {
+    return markdownToDocx(pdfFile, filename);
   }
 
   const { Document, Packer, Paragraph, TextRun, HeadingLevel } = await import('docx');
-
-  let arrayBuffer;
-  if (pdfFile instanceof ArrayBuffer) {
-    arrayBuffer = pdfFile;
-  } else if (pdfFile && pdfFile.arrayBuffer) {
-    arrayBuffer = await pdfFile.arrayBuffer();
-  } else {
-    throw new Error('Please upload a valid .pdf file to convert to Word');
-  }
-
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const pdf = await loadPdfDocument(pdfFile);
 
   const children = [];
-  const totalPages = pdf.numPages;
+  const totalPages = pdf.numPages || 1;
 
   for (let i = 1; i <= totalPages; i++) {
     const page = await pdf.getPage(i);
     const textContent = await page.getTextContent();
-    
+    const rawItems = Array.isArray(textContent?.items) ? textContent.items : [];
+
     const lineMap = new Map();
-    for (const item of textContent.items) {
-      if (!item.str || !item.str.trim()) continue;
-      const y = Math.round(item.transform[5] / 4) * 4;
+    for (const item of rawItems) {
+      if (!item || typeof item.str !== 'string' || !item.str.trim()) continue;
+      const transform = Array.isArray(item.transform) && item.transform.length >= 6
+        ? item.transform
+        : [1, 0, 0, 1, 0, 0];
+      const y = Math.round(transform[5] / 4) * 4;
       if (!lineMap.has(y)) {
         lineMap.set(y, []);
       }
-      lineMap.get(y).push(item);
+      lineMap.get(y).push({ ...item, transform });
     }
 
     const sortedY = Array.from(lineMap.keys()).sort((a, b) => b - a);
 
     for (const y of sortedY) {
-      const items = lineMap.get(y).sort((a, b) => a.transform[4] - b.transform[4]);
-      const lineText = items.map(it => it.str).join(' ').trim();
+      const lineItems = (lineMap.get(y) || []).sort((a, b) => (a.transform?.[4] || 0) - (b.transform?.[4] || 0));
+      const lineText = lineItems.map(it => it.str).join(' ').trim();
       if (!lineText) continue;
 
-      const maxHeight = Math.max(...items.map(it => it.height || 12));
-      const isBold = items.some(it => (it.fontName || '').toLowerCase().includes('bold'));
+      const heights = lineItems.map(it => it.height).filter(h => typeof h === 'number' && !isNaN(h));
+      const maxHeight = heights.length > 0 ? Math.max(...heights) : 12;
+      const isBold = lineItems.some(it => (it.fontName || '').toLowerCase().includes('bold'));
 
       if (maxHeight > 18) {
         children.push(new Paragraph({
@@ -496,7 +598,7 @@ export async function pdfToDocx(pdfFile, filename = 'document.docx') {
 
   if (children.length === 0) {
     children.push(new Paragraph({
-      children: [new TextRun({ text: 'Converted from PDF.', size: 22 })]
+      children: [new TextRun({ text: 'Converted from PDF document.', size: 22 })]
     }));
   }
 
@@ -508,28 +610,18 @@ export async function pdfToDocx(pdfFile, filename = 'document.docx') {
   });
 
   const blob = await Packer.toBlob(doc);
-  return { blob, filename: filename.endsWith('.docx') ? filename : `${filename}.docx`, pageCount: totalPages };
+  return {
+    blob,
+    filename: filename.endsWith('.docx') ? filename : `${filename}.docx`,
+    pageCount: totalPages
+  };
 }
 
 /**
  * PDF → JPG Image Converter using pdfjs-dist
  */
 export async function pdfToJpg(pdfFile, filename = 'document.jpg') {
-  const pdfjsLib = await import('pdfjs-dist');
-  if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
-  }
-
-  let arrayBuffer;
-  if (pdfFile instanceof ArrayBuffer) {
-    arrayBuffer = pdfFile;
-  } else if (pdfFile && pdfFile.arrayBuffer) {
-    arrayBuffer = await pdfFile.arrayBuffer();
-  } else {
-    throw new Error('Please upload a valid .pdf file to convert to JPG');
-  }
-
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const pdf = await loadPdfDocument(pdfFile);
   const page = await pdf.getPage(1);
   const viewport = page.getViewport({ scale: 2.0 });
 
@@ -684,7 +776,21 @@ export async function createPptxPresentation(content, filename = 'presentation.p
   const JSZip = (await import('jszip')).default;
   const zip = new JSZip();
 
-  const text = typeof content === 'string' ? content : (content.text ? await content.text() : '');
+  let text = '';
+  if (typeof content === 'string') {
+    text = content;
+  } else if (content && (content.name?.toLowerCase().endsWith('.pdf') || (content.type && content.type.includes('pdf')))) {
+    try {
+      const textRes = await pdfToText(content);
+      text = textRes.text || '';
+    } catch {
+      text = content.text ? await content.text() : '';
+    }
+  } else if (content && typeof content.text === 'function') {
+    text = await content.text();
+  } else {
+    text = String(content || '');
+  }
   const lines = text.split('\n');
   const slides = [];
   let currentSlide = { title: 'Presentation', body: [] };
@@ -770,7 +876,21 @@ export async function createPptxPresentation(content, filename = 'presentation.p
  */
 export async function documentToXlsx(input, filename = 'data.xlsx') {
   const XLSX = await import('xlsx');
-  const text = typeof input === 'string' ? input : (input.text ? await input.text() : '');
+  let text = '';
+  if (typeof input === 'string') {
+    text = input;
+  } else if (input && (input.name?.toLowerCase().endsWith('.pdf') || (input.type && input.type.includes('pdf')))) {
+    try {
+      const textRes = await pdfToText(input);
+      text = textRes.text || '';
+    } catch {
+      text = input.text ? await input.text() : '';
+    }
+  } else if (input && typeof input.text === 'function') {
+    text = await input.text();
+  } else {
+    text = String(input || '');
+  }
   const lines = text.split('\n').filter(l => l.trim().length > 0);
   const rows = lines.map(line => {
     if (line.includes('\t')) return line.split('\t');
@@ -807,6 +927,13 @@ export async function textToMarkdown(input, filename = 'document.md', settings =
   let text = '';
   if (typeof input === 'string') {
     text = input;
+  } else if (input && (input.name?.toLowerCase().endsWith('.pdf') || (input.type && input.type.includes('pdf')))) {
+    try {
+      const textRes = await pdfToText(input);
+      text = textRes.text || '';
+    } catch {
+      text = input.text ? await input.text() : '';
+    }
   } else if (input instanceof File || input instanceof Blob) {
     text = await input.text();
   } else if (input && typeof input.text === 'function') {

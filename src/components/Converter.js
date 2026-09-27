@@ -1,3 +1,5 @@
+import { ICONS } from '../core/icons.js';
+
 export function renderConverter() {
   return `
     <section id="converter" class="converter-section">
@@ -50,13 +52,13 @@ export function renderConverter() {
               <!-- Quick Templates Group -->
               <div class="topbar-templates-group">
                 <span class="topbar-label-subtle">Templates:</span>
-                <button class="sample-chip sample-pill active" data-sample="techSpec">⚡ Tech Spec</button>
-                <button class="sample-chip sample-pill" data-sample="designNote">🏗️ Design Note</button>
-                <button class="sample-chip sample-pill" data-sample="atsResume">🎯 ATS Resume</button>
-                <button class="sample-chip sample-pill" data-sample="legalContract">📜 Legal</button>
-                <button class="sample-chip sample-pill" data-sample="academicPaper">🎓 Academic</button>
-                <button class="sample-chip sample-pill" data-sample="batesLegalMerge">📑 Bates Legal</button>
-                <button class="sample-chip sample-pill" data-sample="kdpEbook">📖 Book (KDP)</button>
+                <button class="sample-chip sample-pill active" data-sample="techSpec">Tech Spec</button>
+                <button class="sample-chip sample-pill" data-sample="designNote">Design Note</button>
+                <button class="sample-chip sample-pill" data-sample="atsResume">ATS Resume</button>
+                <button class="sample-chip sample-pill" data-sample="legalContract">Legal</button>
+                <button class="sample-chip sample-pill" data-sample="academicPaper">Academic</button>
+                <button class="sample-chip sample-pill" data-sample="batesLegalMerge">Bates Legal</button>
+                <button class="sample-chip sample-pill" data-sample="kdpEbook">Book (KDP)</button>
               </div>
             </div>
 
@@ -91,7 +93,7 @@ export function renderConverter() {
             <div class="app-topbar-right">
               <!-- Theme Selector -->
               <div class="topbar-select-wrap" title="Visual Style Theme">
-                <span class="select-prefix">🎨</span>
+                <span class="select-prefix" style="display: inline-flex; align-items: center; color: #818CF8;">${ICONS.palette}</span>
                 <select id="theme-select" class="topbar-select">
                   <option value="github" selected>GitHub Classic</option>
                   <option value="super-modern">Super Modern</option>
@@ -135,7 +137,7 @@ export function renderConverter() {
                 <div id="doc-settings-popover" class="doc-settings-popover" style="display: none;">
                   <div class="doc-settings-popover-header">
                     <div class="doc-settings-popover-title">
-                      <span class="doc-settings-popover-icon">⚙️</span>
+                      <span class="doc-settings-popover-icon" style="display: inline-flex; align-items: center; color: #818CF8;">${ICONS.settings}</span>
                       <span>Layout & Export Settings</span>
                     </div>
                     <button type="button" id="btn-close-doc-settings" class="doc-settings-close">&times;</button>
@@ -216,7 +218,7 @@ export function renderConverter() {
                 <div id="watermark-popover" class="watermark-popover" style="display: none;">
                   <div class="wm-popover-header">
                     <div class="wm-popover-title">
-                      <span class="wm-popover-icon">💧</span>
+                      <span class="wm-popover-icon" style="display: inline-flex; align-items: center; color: #06B6D4;">${ICONS.droplet}</span>
                       <span>Watermark Options</span>
                     </div>
                     <button type="button" id="btn-close-watermark-popover" class="wm-popover-close">&times;</button>
@@ -440,8 +442,9 @@ export function renderConverter() {
                   </svg>
                   <span>Select Files from Computer</span>
                 </button>
-                <button id="btn-load-sample-batch" class="btn btn-secondary btn-sm">
-                  <span>⚡ Load Sample Batch (3 Documents)</span>
+                <button id="btn-load-sample-batch" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+                  ${ICONS.sparkles}
+                  <span>Load Sample Batch (3 Documents)</span>
                 </button>
               </div>
               <input type="file" id="batch-file-input" multiple accept=".md,.markdown,.txt" style="display: none;" />
@@ -476,7 +479,7 @@ export function renderConverter() {
                 <!-- Strategy 1: Combine into Single PDF -->
                 <div id="strat-combine" class="strategy-card selected" data-strat="combine">
                   <div class="strategy-card-title">
-                    <span>📑 Combine into Single PDF</span>
+                    <span style="display: inline-flex; align-items: center; gap: 6px;">${ICONS.layers} <span>Combine into Single PDF</span></span>
                     <span class="strategy-badge">Recommended</span>
                   </div>
                   <p class="strategy-card-desc">
@@ -497,15 +500,15 @@ export function renderConverter() {
                 <!-- Strategy 2: Separate PDFs (ZIP Archive) -->
                 <div id="strat-separate" class="strategy-card" data-strat="separate">
                   <div class="strategy-card-title">
-                    <span>📦 Separate PDFs (Download ZIP)</span>
+                    <span style="display: inline-flex; align-items: center; gap: 6px;">${ICONS.package} <span>Separate PDFs (Download ZIP)</span></span>
                     <span class="strategy-badge">Batch Mode</span>
                   </div>
                   <p class="strategy-card-desc">
                     Compiles each markdown file independently and bundles them together into a high-speed ZIP archive.
                   </p>
                   <div class="strategy-suboptions">
-                    <span style="font-size: 0.8rem; color: var(--accent-lime); font-weight: 600;">
-                      ✓ Preserves original file names as individual PDFs
+                    <span style="font-size: 0.8rem; color: var(--accent-lime); font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                      ${ICONS.check} <span>Preserves original file names as individual PDFs</span>
                     </span>
                   </div>
                 </div>

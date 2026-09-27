@@ -1,3 +1,5 @@
+import { ICONS } from '../core/icons.js';
+
 /**
  * SuperConvert — Universal Tool Converter Component
  * Complete Full-Width Structured Application Workspace
@@ -32,7 +34,7 @@ export function renderToolConverter() {
             <div class="tool-header-divider hide-mobile"></div>
 
             <div class="tool-active-info">
-              <span id="tool-active-icon" class="tool-active-icon">⚡</span>
+              <span id="tool-active-icon" class="tool-active-icon">${ICONS.zap}</span>
               <div>
                 <h1 id="tool-active-name" class="tool-active-name">Compress + Format Converter</h1>
                 <p id="tool-active-desc" class="tool-active-desc">Simultaneously change image format and compress to target file size.</p>
@@ -41,7 +43,7 @@ export function renderToolConverter() {
           </div>
 
           <div class="tool-header-right">
-            <span id="tool-active-badge" class="tool-header-badge badge-free">⚡ FREE</span>
+            <span id="tool-active-badge" class="tool-header-badge badge-free">${ICONS.zap} <span>FREE</span></span>
             <button id="tool-format-pill" class="tool-format-pill tool-format-pill-btn" type="button" title="Click to browse & change format">
               <span id="tool-format-pill-label">.png → .webp / .jpg</span>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -188,9 +190,9 @@ export function renderToolConverter() {
                   <h3 class="output-empty-title">Output Canvas Ready</h3>
                   <p class="output-empty-desc">Choose a file or enter input on the left and click <strong>Convert & Download</strong> to preview and inspect your converted output here.</p>
                   <div class="output-empty-pills">
-                    <span class="empty-pill">⚡ Real-time Rendering</span>
-                    <span class="empty-pill">🔒 Private Local Processing</span>
-                    <span class="empty-pill">🎯 Exact Aspect & Quality</span>
+                    <span class="empty-pill">${ICONS.zap} <span>Real-time Rendering</span></span>
+                    <span class="empty-pill">${ICONS.shield} <span>Private Local Processing</span></span>
+                    <span class="empty-pill">${ICONS.target} <span>Exact Aspect & Quality</span></span>
                   </div>
                 </div>
               </div>
@@ -208,7 +210,7 @@ export function renderToolConverter() {
               <div id="tool-output-result" class="tool-output-result" style="display: none;">
                 <div class="result-header">
                   <div class="result-status">
-                    <span class="result-check">✓</span>
+                    <span class="result-check">${ICONS.check}</span>
                     <span class="result-title">Conversion Successful</span>
                   </div>
                 </div>
@@ -235,10 +237,12 @@ export function renderToolConverter() {
                     <span id="tool-download-text">Download File</span>
                   </button>
                   <button id="tool-copy-btn" class="btn btn-secondary btn-sm" style="display: none;">
-                    <span>📋 Copy to Clipboard</span>
+                    ${ICONS.clipboard}
+                    <span>Copy to Clipboard</span>
                   </button>
                   <button id="tool-convert-another" class="btn btn-secondary btn-sm">
-                    <span>↻ Convert Another</span>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                    <span>Convert Another</span>
                   </button>
                 </div>
               </div>
@@ -255,7 +259,7 @@ export function renderToolConverter() {
             <span>Client-Side Sandboxed Engine • Zero Server Retention • All conversions happen strictly in browser memory</span>
           </div>
           <div class="tool-footer-right">
-            <span class="footer-privacy-badge">🔒 Fully Private</span>
+            <span class="footer-privacy-badge" style="display: inline-flex; align-items: center; gap: 6px;">${ICONS.lock} <span>Fully Private</span></span>
           </div>
         </div>
 

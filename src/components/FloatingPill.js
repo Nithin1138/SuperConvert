@@ -1,3 +1,5 @@
+import { ICONS } from '../core/icons.js';
+
 export function renderFloatingPill() {
   return `
     <div id="super-floating-pill" class="super-floating-pill" title="Click to Export PDF (or press ⌘E)">
@@ -12,7 +14,7 @@ export function renderFloatingPill() {
       </div>
       <div>
         <div class="floating-pill-text">Quick Export PDF</div>
-        <div id="floating-pill-sub" class="floating-pill-sub">⚡ Ready • 1-Click</div>
+        <div id="floating-pill-sub" class="floating-pill-sub" style="display: inline-flex; align-items: center; gap: 4px;">${ICONS.zap} <span>Ready • 1-Click</span></div>
       </div>
     </div>
   `;

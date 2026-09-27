@@ -4,6 +4,7 @@
  */
 
 import { CATEGORIES, TOOLS, getCategoryCounts } from '../core/converter-registry.js';
+import { ICONS, getCategoryIconSvg } from '../core/icons.js';
 
 const CATEGORY_LABELS = {
   all: 'All Conversion Tools',
@@ -28,7 +29,7 @@ export function renderHero() {
 
   const categoryItems = CATEGORIES.map(cat => `
     <button class="sidebar-cat-btn ${cat.id === 'all' ? 'active' : ''}" data-category="${cat.id}">
-      <span class="cat-btn-icon">${cat.icon}</span>
+      <span class="cat-btn-icon">${getCategoryIconSvg(cat.id)}</span>
       <span class="cat-btn-label">${cat.label}</span>
       <span class="cat-btn-count">${counts[cat.id] || 0}</span>
     </button>
@@ -134,7 +135,7 @@ export function renderHero() {
               </div>
               <div class="sidebar-tier-list">
                 <button class="sidebar-tier-btn active" data-quick="all">
-                  <span class="tier-label">⚡ 100% Free & Local</span>
+                  <span class="tier-label" style="display: inline-flex; align-items: center; gap: 6px;">${ICONS.zap} <span>100% Free & Local</span></span>
                   <span class="tier-badge">${TOOLS.length}</span>
                 </button>
               </div>
@@ -147,21 +148,21 @@ export function renderHero() {
               </div>
               <div class="sidebar-format-cloud">
                 <button class="sidebar-tag-chip active" data-quick="all">All</button>
-                <button class="sidebar-tag-chip" data-quick="pdf">📄 PDF</button>
-                <button class="sidebar-tag-chip" data-quick="docx">📘 Word</button>
-                <button class="sidebar-tag-chip" data-quick="webp">🖼️ WEBP</button>
-                <button class="sidebar-tag-chip" data-quick="compress">🗜️ Compress</button>
-                <button class="sidebar-tag-chip" data-quick="resize">📐 Resize</button>
-                <button class="sidebar-tag-chip" data-quick="csv">📊 CSV/XLS</button>
-                <button class="sidebar-tag-chip" data-quick="json">📋 JSON</button>
-                <button class="sidebar-tag-chip" data-quick="base64">⚡ Base64</button>
+                <button class="sidebar-tag-chip" data-quick="pdf">${ICONS.pdf} <span>PDF</span></button>
+                <button class="sidebar-tag-chip" data-quick="docx">${ICONS.document} <span>Word</span></button>
+                <button class="sidebar-tag-chip" data-quick="webp">${ICONS.image} <span>WEBP</span></button>
+                <button class="sidebar-tag-chip" data-quick="compress">${ICONS.compress} <span>Compress</span></button>
+                <button class="sidebar-tag-chip" data-quick="resize">${ICONS.crop} <span>Resize</span></button>
+                <button class="sidebar-tag-chip" data-quick="csv">${ICONS.data} <span>CSV/XLS</span></button>
+                <button class="sidebar-tag-chip" data-quick="json">${ICONS.code} <span>JSON</span></button>
+                <button class="sidebar-tag-chip" data-quick="base64">${ICONS.zap} <span>Base64</span></button>
               </div>
             </div>
 
             <!-- Client-Side Guarantee Card -->
             <div class="sidebar-guarantee-box">
               <div class="guarantee-header">
-                <span class="guarantee-icon">🔒</span>
+                <span class="guarantee-icon" style="color: #A49EFF; display: inline-flex; align-items: center;">${ICONS.shield}</span>
                 <span class="guarantee-title">Zero-Server Policy</span>
               </div>
               <p class="guarantee-text">

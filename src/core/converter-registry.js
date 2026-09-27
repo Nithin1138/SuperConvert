@@ -31,9 +31,9 @@ export const TOOLS = [
     isFree: true,
     engine: 'image',
     presets: [
-      { label: '💎 High Quality (95%)', settings: { quality: 95, scale: '100% (Original)', colorFilter: 'None (Original)' } },
-      { label: '⚡ Balanced Web (85%)', settings: { quality: 85, scale: '75%', colorFilter: 'None (Original)' } },
-      { label: '🗜️ Compact (65%)', settings: { quality: 65, scale: '50%', colorFilter: 'None (Original)' } }
+      { label: 'High Quality (95%)', settings: { quality: 95, scale: '100% (Original)', colorFilter: 'None (Original)' } },
+      { label: 'Balanced Web (85%)', settings: { quality: 85, scale: '75%', colorFilter: 'None (Original)' } },
+      { label: 'Compact (65%)', settings: { quality: 65, scale: '50%', colorFilter: 'None (Original)' } }
     ],
     settings: [
       { id: 'targetFormat', type: 'select', label: 'Output Format', options: ['.jpg', '.png', '.webp', '.gif', '.bmp', '.tiff', '.avif', '.ico', '.svg'], default: '.jpg' },
@@ -56,8 +56,8 @@ export const TOOLS = [
     isFree: true,
     engine: 'image',
     presets: [
-      { label: '💎 Crystal Clear (100%)', settings: { quality: 100, scale: '100% (Original)' } },
-      { label: '⚡ Web Scaled (75%)', settings: { quality: 90, scale: '75%' } }
+      { label: 'Crystal Clear (100%)', settings: { quality: 100, scale: '100% (Original)' } },
+      { label: 'Web Scaled (75%)', settings: { quality: 90, scale: '75%' } }
     ],
     settings: [
       { id: 'targetFormat', type: 'select', label: 'Output Format', options: ['.png', '.jpg', '.webp', '.gif', '.bmp', '.tiff', '.avif', '.ico', '.svg'], default: '.png' },
@@ -79,8 +79,8 @@ export const TOOLS = [
     isFree: true,
     engine: 'image',
     presets: [
-      { label: '💎 Lossless 100%', settings: { scale: '100% (Original)', colorFilter: 'None (Original)' } },
-      { label: '⚡ Downscale 75%', settings: { scale: '75%', colorFilter: 'None (Original)' } }
+      { label: 'Lossless 100%', settings: { scale: '100% (Original)', colorFilter: 'None (Original)' } },
+      { label: 'Downscale 75%', settings: { scale: '75%', colorFilter: 'None (Original)' } }
     ],
     settings: [
       { id: 'targetFormat', type: 'select', label: 'Output Format', options: ['.png', '.jpg', '.webp', '.gif', '.bmp', '.tiff', '.avif', '.ico', '.svg'], default: '.png' },
@@ -101,8 +101,8 @@ export const TOOLS = [
     isFree: true,
     engine: 'image',
     presets: [
-      { label: '🌐 Standard Favicon (32x32)', settings: { icoSize: '32x32 (Browser Tab)', padToSquare: true } },
-      { label: '📱 Retina Icon (128x128)', settings: { icoSize: '128x128 (Retina)', padToSquare: true } }
+      { label: 'Standard Favicon (32x32)', settings: { icoSize: '32x32 (Browser Tab)', padToSquare: true } },
+      { label: 'Retina Icon (128x128)', settings: { icoSize: '128x128 (Retina)', padToSquare: true } }
     ],
     settings: [
       { id: 'icoSize', type: 'select', label: 'Favicon Dimension', options: ['64x64 (Standard)', '32x32 (Browser Tab)', '16x16 (Classic Bookmark)', '128x128 (Retina)', '256x256 (High-Res)'], default: '64x64 (Standard)' },
@@ -123,8 +123,8 @@ export const TOOLS = [
     isFree: true,
     engine: 'doc',
     presets: [
-      { label: '🖨️ High-Res Print (300 DPI)', settings: { dpi: '300 DPI (High-Res Print)', quality: 95, pageNumber: 1 } },
-      { label: '⚡ Web Screen (150 DPI)', settings: { dpi: '150 DPI (Sharp Web)', quality: 85, pageNumber: 1 } }
+      { label: 'High-Res Print (300 DPI)', settings: { dpi: '300 DPI (High-Res Print)', quality: 95, pageNumber: 1 } },
+      { label: 'Web Screen (150 DPI)', settings: { dpi: '150 DPI (Sharp Web)', quality: 85, pageNumber: 1 } }
     ],
     settings: [
       { id: 'pageNumber', type: 'number', label: 'Target Page Number', default: 1 },
@@ -145,8 +145,8 @@ export const TOOLS = [
     isFree: true,
     engine: 'doc',
     presets: [
-      { label: '📑 Standard A4 Document', settings: { format: 'a4', orientation: 'portrait', fit: 'Fit to Page' } },
-      { label: '🖼️ Full Bleed Photo (No Margins)', settings: { format: 'a4', orientation: 'portrait', fit: 'Full Bleed' } }
+      { label: 'Standard A4 Document', settings: { format: 'a4', orientation: 'portrait', fit: 'Fit to Page' } },
+      { label: 'Full Bleed Photo (No Margins)', settings: { format: 'a4', orientation: 'portrait', fit: 'Full Bleed' } }
     ],
     settings: [
       { id: 'fit', type: 'select', label: 'Image Fit Strategy', options: ['Fit to Page', 'Full Bleed', 'Original Scale Centered'], default: 'Fit to Page' },
@@ -172,8 +172,8 @@ export const TOOLS = [
     isFree: true,
     engine: 'doc',
     presets: [
-      { label: '💼 Professional Executive', settings: { theme: 'executive', format: 'a4', orientation: 'portrait', margin: '15mm' } },
-      { label: '🎓 Academic Paper', settings: { theme: 'academic', format: 'a4', orientation: 'portrait', margin: '20mm' } }
+      { label: 'Professional Executive', settings: { theme: 'executive', format: 'a4', orientation: 'portrait', margin: '15mm' } },
+      { label: 'Academic Paper', settings: { theme: 'academic', format: 'a4', orientation: 'portrait', margin: '20mm' } }
     ],
     settings: [
       { id: 'theme', type: 'select', label: 'Document Theme', options: ['github', 'super-modern', 'academic', 'executive', 'midnight'], default: 'github' },
@@ -195,8 +195,8 @@ export const TOOLS = [
     isFree: true,
     engine: 'doc',
     presets: [
-      { label: '📝 Clean Editable Word', settings: { font: 'Calibri', fontSize: '11pt', detectParagraphs: true } },
-      { label: '🏛️ Formal Academic (Times)', settings: { font: 'Times New Roman', fontSize: '12pt', detectParagraphs: true } }
+      { label: 'Clean Editable Word', settings: { font: 'Calibri', fontSize: '11pt', detectParagraphs: true } },
+      { label: 'Formal Academic (Times)', settings: { font: 'Times New Roman', fontSize: '12pt', detectParagraphs: true } }
     ],
     settings: [
       { id: 'extractMode', type: 'select', label: 'Extraction Mode', options: ['Formatted Flowable Text', 'Raw Unformatted Lines', 'Table Structured'], default: 'Formatted Flowable Text' },
@@ -219,8 +219,8 @@ export const TOOLS = [
     isStudio: true,
     engine: 'studio',
     presets: [
-      { label: '💻 Modern Tech Document', settings: { theme: 'super-modern', format: 'a4', fontSize: '11pt' } },
-      { label: '🎓 Academic Report', settings: { theme: 'academic', format: 'a4', fontSize: '12pt' } }
+      { label: 'Modern Tech Document', settings: { theme: 'super-modern', format: 'a4', fontSize: '11pt' } },
+      { label: 'Academic Report', settings: { theme: 'academic', format: 'a4', fontSize: '12pt' } }
     ],
     settings: [
       { id: 'theme', type: 'select', label: 'Styling Theme', options: ['github', 'super-modern', 'academic', 'executive', 'midnight'], default: 'github' },
@@ -336,9 +336,9 @@ export const TOOLS = [
     engine: 'latex',
     hasTextInput: true,
     presets: [
-      { label: '🎓 Academic Paper', settings: { documentClass: 'article', fontSize: '11pt', paperSize: 'a4paper', margin: '1in' } },
-      { label: '🔬 IEEE Journal', settings: { documentClass: 'IEEEtran', fontSize: '10pt', paperSize: 'letterpaper', margin: '0.75in', twoColumn: true } },
-      { label: '📚 Thesis / Book', settings: { documentClass: 'report', fontSize: '12pt', paperSize: 'a4paper', margin: '1in' } }
+      { label: 'Academic Paper', settings: { documentClass: 'article', fontSize: '11pt', paperSize: 'a4paper', margin: '1in' } },
+      { label: 'IEEE Journal', settings: { documentClass: 'IEEEtran', fontSize: '10pt', paperSize: 'letterpaper', margin: '0.75in', twoColumn: true } },
+      { label: 'Thesis / Book', settings: { documentClass: 'report', fontSize: '12pt', paperSize: 'a4paper', margin: '1in' } }
     ],
     settings: [
       {
@@ -346,14 +346,14 @@ export const TOOLS = [
         type: 'select',
         label: 'Document Template',
         options: [
-          { value: 'article', label: '📄 Academic Research Paper (article)' },
-          { value: 'IEEEtran', label: '🔬 IEEE Conference / Journal (IEEEtran)' },
-          { value: 'report', label: '📚 University Thesis & Dissertation (report)' },
-          { value: 'beamer', label: '📊 Modern Presentation Deck (beamer 16:9)' },
-          { value: 'cv', label: '💼 Modern Academic & Executive CV' },
-          { value: 'assignment', label: '📝 Math & Physics Assignment (homework)' },
-          { value: 'executive', label: '🏢 Executive Briefing & Whitepaper' },
-          { value: 'minimal', label: '⚡ Minimal Clean Article (minimal)' }
+          { value: 'article', label: 'Academic Research Paper (article)' },
+          { value: 'IEEEtran', label: 'IEEE Conference / Journal (IEEEtran)' },
+          { value: 'report', label: 'University Thesis & Dissertation (report)' },
+          { value: 'beamer', label: 'Modern Presentation Deck (beamer 16:9)' },
+          { value: 'cv', label: 'Modern Academic & Executive CV' },
+          { value: 'assignment', label: 'Math & Physics Assignment (homework)' },
+          { value: 'executive', label: 'Executive Briefing & Whitepaper' },
+          { value: 'minimal', label: 'Minimal Clean Article (minimal)' }
         ],
         default: 'article'
       },
@@ -378,8 +378,8 @@ export const TOOLS = [
     isFree: true,
     engine: 'latex',
     presets: [
-      { label: '🎓 Academic Paper', settings: { documentClass: 'article', fontSize: '11pt', paperSize: 'a4paper', margin: '1in' } },
-      { label: '🔬 IEEE Journal', settings: { documentClass: 'IEEEtran', fontSize: '10pt', paperSize: 'letterpaper', margin: '0.75in', twoColumn: true } }
+      { label: 'Academic Paper', settings: { documentClass: 'article', fontSize: '11pt', paperSize: 'a4paper', margin: '1in' } },
+      { label: 'IEEE Journal', settings: { documentClass: 'IEEEtran', fontSize: '10pt', paperSize: 'letterpaper', margin: '0.75in', twoColumn: true } }
     ],
     settings: [
       {
@@ -387,14 +387,14 @@ export const TOOLS = [
         type: 'select',
         label: 'Document Template',
         options: [
-          { value: 'article', label: '📄 Academic Research Paper (article)' },
-          { value: 'IEEEtran', label: '🔬 IEEE Conference / Journal (IEEEtran)' },
-          { value: 'report', label: '📚 University Thesis & Dissertation (report)' },
-          { value: 'beamer', label: '📊 Modern Presentation Deck (beamer 16:9)' },
-          { value: 'cv', label: '💼 Modern Academic & Executive CV' },
-          { value: 'assignment', label: '📝 Math & Physics Assignment (homework)' },
-          { value: 'executive', label: '🏢 Executive Briefing & Whitepaper' },
-          { value: 'minimal', label: '⚡ Minimal Clean Article (minimal)' }
+          { value: 'article', label: 'Academic Research Paper (article)' },
+          { value: 'IEEEtran', label: 'IEEE Conference / Journal (IEEEtran)' },
+          { value: 'report', label: 'University Thesis & Dissertation (report)' },
+          { value: 'beamer', label: 'Modern Presentation Deck (beamer 16:9)' },
+          { value: 'cv', label: 'Modern Academic & Executive CV' },
+          { value: 'assignment', label: 'Math & Physics Assignment (homework)' },
+          { value: 'executive', label: 'Executive Briefing & Whitepaper' },
+          { value: 'minimal', label: 'Minimal Clean Article (minimal)' }
         ],
         default: 'article'
       },
@@ -420,8 +420,8 @@ export const TOOLS = [
     engine: 'latex',
     hasTextInput: true,
     presets: [
-      { label: '🎓 Academic Classic', settings: { theme: 'academic', paperSize: 'a4', fontSize: '11pt', margin: '15mm' } },
-      { label: '💻 Modern Tech', settings: { theme: 'github', paperSize: 'a4', fontSize: '11pt', margin: '15mm' } }
+      { label: 'Academic Classic', settings: { theme: 'academic', paperSize: 'a4', fontSize: '11pt', margin: '15mm' } },
+      { label: 'Modern Tech', settings: { theme: 'github', paperSize: 'a4', fontSize: '11pt', margin: '15mm' } }
     ],
     settings: [
       {
@@ -429,10 +429,10 @@ export const TOOLS = [
         type: 'select',
         label: 'Document Styling',
         options: [
-          { value: 'academic', label: '🎓 Academic Journal (Serif, Classic)' },
-          { value: 'github', label: '💻 Modern Tech (GitHub Clean)' },
-          { value: 'formal', label: '🏛️ Formal Executive (Times, Elegant)' },
-          { value: 'minimal', label: '⚡ Minimalist (Clean Sans)' }
+          { value: 'academic', label: 'Academic Journal (Serif, Classic)' },
+          { value: 'github', label: 'Modern Tech (GitHub Clean)' },
+          { value: 'formal', label: 'Formal Executive (Times, Elegant)' },
+          { value: 'minimal', label: 'Minimalist (Clean Sans)' }
         ],
         default: 'academic'
       },
@@ -477,9 +477,9 @@ export const TOOLS = [
     isFree: true,
     engine: 'image',
     presets: [
-      { label: '🗜️ Max Compression (<100KB)', settings: { sizePreset: '< 100 KB (Thumbnail/Web)', quality: 60 } },
-      { label: '📧 Email Ready (<500KB)', settings: { sizePreset: '< 500 KB (Standard)', quality: 80 } },
-      { label: '💎 High Quality (<1MB)', settings: { sizePreset: '< 1 MB (High Quality)', quality: 90 } }
+      { label: 'Max Compression (<100KB)', settings: { sizePreset: '< 100 KB (Thumbnail/Web)', quality: 60 } },
+      { label: 'Email Ready (<500KB)', settings: { sizePreset: '< 500 KB (Standard)', quality: 80 } },
+      { label: 'High Quality (<1MB)', settings: { sizePreset: '< 1 MB (High Quality)', quality: 90 } }
     ],
     settings: [
       { id: 'sizePreset', type: 'select', label: 'Target Size Preset', options: ['Auto (Quality Slider)', '< 100 KB (Thumbnail/Web)', '< 250 KB (Upload/Email)', '< 500 KB (Standard)', '< 1 MB (High Quality)', '< 2 MB (Max Cap)', 'Custom Target (KB)'], default: 'Auto (Quality Slider)' },
@@ -501,8 +501,8 @@ export const TOOLS = [
     isFree: true,
     engine: 'image',
     presets: [
-      { label: '⚡ Ultra WebP (<250KB)', settings: { targetFormat: '.webp', sizePreset: '< 250 KB (Upload/Email)', quality: 80 } },
-      { label: '🖼️ High-Res PNG (Lossless)', settings: { targetFormat: '.png', sizePreset: 'Auto (Quality Slider)', quality: 95 } }
+      { label: 'Ultra WebP (<250KB)', settings: { targetFormat: '.webp', sizePreset: '< 250 KB (Upload/Email)', quality: 80 } },
+      { label: 'High-Res PNG (Lossless)', settings: { targetFormat: '.png', sizePreset: 'Auto (Quality Slider)', quality: 95 } }
     ],
     settings: [
       { id: 'targetFormat', type: 'select', label: 'Output Format', options: ['.webp', '.jpg', '.png', '.gif', '.tiff', '.avif', '.ico', '.bmp', '.svg'], default: '.webp' },
@@ -525,9 +525,9 @@ export const TOOLS = [
     isFree: true,
     engine: 'image',
     presets: [
-      { label: '🖥️ 1080p FHD (1920x1080)', settings: { width: 1920, height: 1080, cropRatio: '16:9', maintainAspect: true } },
-      { label: '📱 Instagram Square (1080x1080)', settings: { width: 1080, height: 1080, cropRatio: '1:1', maintainAspect: true } },
-      { label: '🖼️ 720p HD (1280x720)', settings: { width: 1280, height: 720, cropRatio: '16:9', maintainAspect: true } }
+      { label: '1080p FHD (1920x1080)', settings: { width: 1920, height: 1080, cropRatio: '16:9', maintainAspect: true } },
+      { label: 'Instagram Square (1080x1080)', settings: { width: 1080, height: 1080, cropRatio: '1:1', maintainAspect: true } },
+      { label: '720p HD (1280x720)', settings: { width: 1280, height: 720, cropRatio: '16:9', maintainAspect: true } }
     ],
     settings: [
       { id: 'width', type: 'number', label: 'Target Width (px)', default: 800 },
@@ -549,9 +549,9 @@ export const TOOLS = [
     isFree: true,
     engine: 'image',
     presets: [
-      { label: '🔒 Confidential Cross Stamp', settings: { effect: 'Watermark', watermarkText: 'CONFIDENTIAL', watermarkDegree: 'Cross (-45°)', opacity: '25%' } },
+      { label: 'Confidential Cross Stamp', settings: { effect: 'Watermark', watermarkText: 'CONFIDENTIAL', watermarkDegree: 'Cross (-45°)', opacity: '25%' } },
       { label: '⊞ Full Page Tiled Watermark', settings: { effect: 'Watermark', watermarkText: 'COPYRIGHT PROTECTED', watermarkRepeat: 'Repeat Tiled Pattern', opacity: '15%' } },
-      { label: '🖤 B&W Monochrome', settings: { effect: 'Grayscale' } }
+      { label: 'B&W Monochrome', settings: { effect: 'Grayscale' } }
     ],
     settings: [
       { id: 'effect', type: 'select', label: 'Effect Mode', options: ['Watermark', 'Grayscale', 'Sepia', 'High Contrast', 'Invert'], default: 'Watermark' },
@@ -579,8 +579,8 @@ export const TOOLS = [
     isFree: true,
     engine: 'media',
     presets: [
-      { label: '🎵 Studio Quality (320 kbps)', settings: { bitrate: '320 kbps (Maximum Quality)', channels: 'Stereo (2 Channels)', sampleRate: '48000 Hz (Video Standard)' } },
-      { label: '🎙️ Voice / Podcast (128 kbps)', settings: { bitrate: '128 kbps (Voice / Low Size)', channels: 'Mono (1 Channel)', sampleRate: '44100 Hz (CD Audio)' } }
+      { label: 'Studio Quality (320 kbps)', settings: { bitrate: '320 kbps (Maximum Quality)', channels: 'Stereo (2 Channels)', sampleRate: '48000 Hz (Video Standard)' } },
+      { label: 'Voice / Podcast (128 kbps)', settings: { bitrate: '128 kbps (Voice / Low Size)', channels: 'Mono (1 Channel)', sampleRate: '44100 Hz (CD Audio)' } }
     ],
     settings: [
       { id: 'bitrate', type: 'select', label: 'Audio Bitrate', options: ['320 kbps (Maximum Quality)', '256 kbps (High Quality)', '192 kbps (Standard)', '128 kbps (Voice / Low Size)'], default: '256 kbps (High Quality)' },
@@ -601,8 +601,8 @@ export const TOOLS = [
     isFree: true,
     engine: 'media',
     presets: [
-      { label: '🎼 Studio 24-bit / 48 kHz', settings: { bitDepth: '24-bit PCM (Studio Audio)', sampleRate: '48000 Hz (Broadcast)', channels: 'Stereo (2 Channels)' } },
-      { label: '💿 Standard 16-bit / 44.1 kHz', settings: { bitDepth: '16-bit PCM (CD Standard)', sampleRate: '44100 Hz (Standard)', channels: 'Stereo (2 Channels)' } }
+      { label: 'Studio 24-bit / 48 kHz', settings: { bitDepth: '24-bit PCM (Studio Audio)', sampleRate: '48000 Hz (Broadcast)', channels: 'Stereo (2 Channels)' } },
+      { label: 'Standard 16-bit / 44.1 kHz', settings: { bitDepth: '16-bit PCM (CD Standard)', sampleRate: '44100 Hz (Standard)', channels: 'Stereo (2 Channels)' } }
     ],
     settings: [
       { id: 'bitDepth', type: 'select', label: 'Bit Depth', options: ['16-bit PCM (CD Standard)', '24-bit PCM (Studio Audio)', '32-bit Float'], default: '16-bit PCM (CD Standard)' },
@@ -622,8 +622,8 @@ export const TOOLS = [
     isFree: true,
     engine: 'media',
     presets: [
-      { label: '⚡ Discord/Slack Optimized (360p, 10fps)', settings: { resolution: '360p Small (Discord / Slack)', fps: '10 fps', duration: 4 } },
-      { label: '🎞️ Smooth HD (720p, 15fps)', settings: { resolution: '720p HD', fps: '15 fps', duration: 3 } }
+      { label: 'Discord/Slack Optimized (360p, 10fps)', settings: { resolution: '360p Small (Discord / Slack)', fps: '10 fps', duration: 4 } },
+      { label: 'Smooth HD (720p, 15fps)', settings: { resolution: '720p HD', fps: '15 fps', duration: 3 } }
     ],
     settings: [
       { id: 'duration', type: 'range', label: 'Max Duration (seconds)', min: 1, max: 15, default: 4, unit: 's' },
@@ -683,8 +683,8 @@ export const TOOLS = [
     isFree: true,
     engine: 'media',
     presets: [
-      { label: '💿 16-bit / 44.1 kHz (CD Standard)', settings: { bitDepth: '16-bit PCM (Standard)', sampleRate: '44100 Hz (CD Standard)' } },
-      { label: '🎼 24-bit / 48 kHz (Studio Audio)', settings: { bitDepth: '24-bit PCM (Studio Audio)', sampleRate: '48000 Hz (Studio Audio)' } }
+      { label: '16-bit / 44.1 kHz (CD Standard)', settings: { bitDepth: '16-bit PCM (Standard)', sampleRate: '44100 Hz (CD Standard)' } },
+      { label: '24-bit / 48 kHz (Studio Audio)', settings: { bitDepth: '24-bit PCM (Studio Audio)', sampleRate: '48000 Hz (Studio Audio)' } }
     ],
     settings: [
       { id: 'sampleRate', type: 'select', label: 'Sample Rate', options: ['44100 Hz (CD Standard)', '48000 Hz (Studio Audio)', '96000 Hz (Hi-Res)'], default: '44100 Hz (CD Standard)' },
@@ -705,8 +705,8 @@ export const TOOLS = [
     isFree: true,
     engine: 'media',
     presets: [
-      { label: '💎 Studio Master (320 kbps)', settings: { bitrate: '320 kbps (Maximum Quality)', sampleRate: '44100 Hz (CD Quality)' } },
-      { label: '⚡ Standard Web (192 kbps)', settings: { bitrate: '192 kbps (Standard Balanced)', sampleRate: '44100 Hz (CD Quality)' } }
+      { label: 'Studio Master (320 kbps)', settings: { bitrate: '320 kbps (Maximum Quality)', sampleRate: '44100 Hz (CD Quality)' } },
+      { label: 'Standard Web (192 kbps)', settings: { bitrate: '192 kbps (Standard Balanced)', sampleRate: '44100 Hz (CD Quality)' } }
     ],
     settings: [
       { id: 'bitrate', type: 'select', label: 'MP3 Bitrate', options: ['320 kbps (Maximum Quality)', '256 kbps (High Quality)', '192 kbps (Standard Balanced)', '128 kbps (Voice / Low Size)'], default: '320 kbps (Maximum Quality)' },
@@ -782,8 +782,8 @@ export const TOOLS = [
     isFree: true,
     engine: '3d',
     presets: [
-      { label: '🖨️ 3D Print Standard (Binary, mm)', settings: { stlFormat: 'Binary STL (Compact & Fast)', unitScale: '1.0 (Direct Unit)', centerOrigin: true } },
-      { label: '📐 Architectural (Meters to mm)', settings: { stlFormat: 'Binary STL (Compact & Fast)', unitScale: '1000.0 (Meters to Millimeters)', centerOrigin: true } }
+      { label: '3D Print Standard (Binary, mm)', settings: { stlFormat: 'Binary STL (Compact & Fast)', unitScale: '1.0 (Direct Unit)', centerOrigin: true } },
+      { label: 'Architectural (Meters to mm)', settings: { stlFormat: 'Binary STL (Compact & Fast)', unitScale: '1000.0 (Meters to Millimeters)', centerOrigin: true } }
     ],
     settings: [
       { id: 'stlFormat', type: 'select', label: 'STL Output Type', options: ['Binary STL (Compact & Fast)', 'ASCII STL (Human-Readable Text)'], default: 'Binary STL (Compact & Fast)' },
@@ -863,9 +863,9 @@ export const TOOLS = [
     isFree: true,
     engine: 'data',
     presets: [
-      { label: '📊 Array of Objects (Standard)', settings: { jsonStructure: 'Array of Objects (Standard)', indentation: '2 Spaces (Pretty)', delimiter: ', (Comma)' } },
-      { label: '⚡ Ultra-Compact Minified', settings: { jsonStructure: 'Array of Objects (Standard)', indentation: 'Compact Minified (1 Line)', delimiter: ', (Comma)' } },
-      { label: '📋 Columnar Data (Object of Arrays)', settings: { jsonStructure: 'Object of Arrays (Columnar)', indentation: '2 Spaces (Pretty)', delimiter: ', (Comma)' } }
+      { label: 'Array of Objects (Standard)', settings: { jsonStructure: 'Array of Objects (Standard)', indentation: '2 Spaces (Pretty)', delimiter: ', (Comma)' } },
+      { label: 'Ultra-Compact Minified', settings: { jsonStructure: 'Array of Objects (Standard)', indentation: 'Compact Minified (1 Line)', delimiter: ', (Comma)' } },
+      { label: 'Columnar Data (Object of Arrays)', settings: { jsonStructure: 'Object of Arrays (Columnar)', indentation: '2 Spaces (Pretty)', delimiter: ', (Comma)' } }
     ],
     settings: [
       { id: 'jsonStructure', type: 'select', label: 'JSON Structure', options: ['Array of Objects (Standard)', 'Object of Arrays (Columnar)', '2D Array (Rows without keys)'], default: 'Array of Objects (Standard)' },
@@ -888,8 +888,8 @@ export const TOOLS = [
     isFree: true,
     engine: 'data',
     presets: [
-      { label: '📈 Standard CSV (Excel Friendly)', settings: { delimiter: ', (Comma)', quoteStrings: 'Only when necessary (Standard)', lineEnding: 'CRLF (Windows Excel)' } },
-      { label: '🌐 Unix / Web CSV', settings: { delimiter: ', (Comma)', quoteStrings: 'Only when necessary (Standard)', lineEnding: 'LF (Unix / Web)' } }
+      { label: 'Standard CSV (Excel Friendly)', settings: { delimiter: ', (Comma)', quoteStrings: 'Only when necessary (Standard)', lineEnding: 'CRLF (Windows Excel)' } },
+      { label: 'Unix / Web CSV', settings: { delimiter: ', (Comma)', quoteStrings: 'Only when necessary (Standard)', lineEnding: 'LF (Unix / Web)' } }
     ],
     settings: [
       { id: 'delimiter', type: 'select', label: 'CSV Delimiter', options: [', (Comma)', '; (Semicolon)', '\t (Tab)', '| (Pipe)'], default: ', (Comma)' },
@@ -985,9 +985,9 @@ export const TOOLS = [
     engine: 'data',
     hasTextInput: true,
     presets: [
-      { label: '✨ 2-Space Pretty', settings: { indent: '2 spaces', sortKeys: false } },
-      { label: '📦 Compact Minified', settings: { indent: 'Compact Minified', sortKeys: false } },
-      { label: '🔤 Alphabetical Sorted Keys', settings: { indent: '2 spaces', sortKeys: true } }
+      { label: '2-Space Pretty', settings: { indent: '2 spaces', sortKeys: false } },
+      { label: 'Compact Minified', settings: { indent: 'Compact Minified', sortKeys: false } },
+      { label: 'Alphabetical Sorted Keys', settings: { indent: '2 spaces', sortKeys: true } }
     ],
     settings: [
       { id: 'indent', type: 'select', label: 'Indentation', options: ['2 spaces', '4 spaces', 'Tab', 'Compact Minified'], default: '2 spaces' },

@@ -469,8 +469,12 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding-bottom: 12px;
+  padding-bottom: 14px;
+  margin-bottom: 2px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
 }
 
 .output-status-badge {
@@ -482,18 +486,24 @@
   color: var(--text-muted);
   border: 1px solid rgba(255, 255, 255, 0.08);
   font-family: 'JetBrains Mono', monospace;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
 }
 
 .tool-output-canvas {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
+  align-items: stretch;
   min-height: 480px;
   background: rgba(255, 255, 255, 0.015);
   border-radius: 14px;
   border: 1px dashed rgba(255, 255, 255, 0.08);
-  padding: 24px;
+  padding: 20px;
+  position: relative;
 }
 
 /* Tool Footer Strip */
@@ -1501,6 +1511,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .result-status {

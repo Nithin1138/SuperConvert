@@ -1,3 +1,5 @@
+import { ICONS } from '../core/icons.js';
+
 export function renderNavbar() {
   return `
     <header class="navbar-header">
@@ -10,7 +12,7 @@ export function renderNavbar() {
 
         <ul class="navbar-nav">
           <li><a href="#/" class="navbar-link">All Tools Hub</a></li>
-          <li><a href="#/story" class="navbar-link" style="color: #818cf8; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;"><span>✨ Story Mode</span></a></li>
+          <li><a href="#/story" class="navbar-link" style="color: #818cf8; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">${ICONS.sparkles}<span>Story Mode</span></a></li>
           <li><a href="#features" class="navbar-link">Features</a></li>
           <li><a href="#faq" class="navbar-link">FAQs</a></li>
           <li><button id="btn-open-api" class="navbar-link">API Docs</button></li>

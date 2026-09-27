@@ -55,6 +55,7 @@ import { processAudioVideoTool } from './core/audio-video-engine.js';
 import { convert3DModel } from './core/three-d-engine.js';
 import { processLatexTool } from './core/latex-engine.js';
 import JSZip from 'jszip';
+import { ICONS, getCategoryIconSvg, getToolIconSvg, getFileThumbIconSvg } from './core/icons.js';
 
 // Application State
 const state = {
@@ -683,17 +684,22 @@ function activateUniversalTool(tool) {
   const crumbTitle = document.getElementById('tool-breadcrumb-title');
   const statusPill = document.getElementById('tool-output-status-pill');
 
-  if (iconEl) iconEl.textContent = tool.icon;
+  if (iconEl) iconEl.innerHTML = getToolIconSvg(tool);
   if (nameEl) nameEl.textContent = tool.name;
   if (descEl) descEl.textContent = tool.description;
   if (catEl) catEl.textContent = (tool.category || 'tools').toUpperCase();
   if (crumbTitle) crumbTitle.textContent = tool.name;
-  if (statusPill) statusPill.textContent = tool.hasTextInput ? 'Ready for Input' : 'Awaiting Source File';
+  if (statusPill) {
+    statusPill.textContent = tool.hasTextInput ? 'Ready for Input' : 'Awaiting Source File';
+    statusPill.style.color = '';
+    statusPill.style.borderColor = '';
+    statusPill.style.background = '';
+  }
   
   const badge = document.getElementById('tool-active-badge');
   if (badge) {
     badge.className = `tool-header-badge ${tool.isFree ? 'badge-free' : 'badge-pro'}`;
-    badge.textContent = tool.isFree ? '⚡ FREE' : `💎 ${tool.price}`;
+    badge.innerHTML = tool.isFree ? `${ICONS.zap} <span>FREE</span>` : `${ICONS.diamond} <span>${tool.price}</span>`;
   }
 
   const formatPill = document.getElementById('tool-format-pill');
@@ -772,7 +778,7 @@ function activateUniversalTool(tool) {
     sampleBtn.id = 'tool-latex-sample-btn';
     sampleBtn.type = 'button';
     sampleBtn.className = 'latex-sample-btn';
-    sampleBtn.innerHTML = isLatexConsumer ? '<span>✨ Load Sample LaTeX</span>' : '<span>✨ Load Sample Paper</span>';
+    sampleBtn.innerHTML = isLatexConsumer ? `${ICONS.sparkles} <span>Load Sample LaTeX</span>` : `${ICONS.sparkles} <span>Load Sample Paper</span>`;
     sampleBtn.addEventListener('click', (e) => {
       e.preventDefault();
       playClickSound();
@@ -909,7 +915,7 @@ function renderToolSettings(tool) {
       presetsBar.style.display = 'flex';
       presetsBar.innerHTML = `
         <div class="presets-bar-header">
-          <span class="presets-bar-title">⚡ Quick Presets:</span>
+          <span class="presets-bar-title" style="display: inline-flex; align-items: center; gap: 5px;">${ICONS.zap} <span>Quick Presets:</span></span>
         </div>
         <div class="presets-chips">
           ${tool.presets.map((preset, idx) => `
@@ -1186,8 +1192,8 @@ function setupToolConverter() {
       playClickSound();
       if (state.toolResult?.preview) {
         await navigator.clipboard.writeText(state.toolResult.preview);
-        copyBtn.innerHTML = '<span>✓ Copied!</span>';
-        setTimeout(() => { copyBtn.innerHTML = '<span>📋 Copy to Clipboard</span>'; }, 2000);
+        copyBtn.innerHTML = `${ICONS.check} <span>Copied!</span>`;
+        setTimeout(() => { copyBtn.innerHTML = `${ICONS.clipboard} <span>Copy to Clipboard</span>`; }, 2000);
       }
     });
   }
@@ -1258,13 +1264,7 @@ function renderToolFilesList() {
       const thumbUrl = URL.createObjectURL(file);
       return `<img src="${thumbUrl}" class="selected-file-thumb" alt="Thumbnail" />`;
     }
-    let icon = '📄';
-    if (/\.(pdf|docx?|pptx?|xlsx?)$/i.test(file.name)) icon = '📑';
-    else if (/\.(mp3|wav|ogg|flac|aac)$/i.test(file.name)) icon = '🎵';
-    else if (/\.(mp4|webm|mov|mkv)$/i.test(file.name)) icon = '🎬';
-    else if (/\.(obj|stl|fbx|gltf)$/i.test(file.name)) icon = '🧊';
-    else if (/\.(json|csv|xml|yaml)$/i.test(file.name)) icon = '📊';
-    return `<span class="selected-file-icon">${icon}</span>`;
+    return `<span class="selected-file-icon" style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; color: #818CF8;">${getFileThumbIconSvg(file.name, file.type)}</span>`;
   };
 
   if (state.toolFiles.length === 1) {
@@ -1278,7 +1278,7 @@ function renderToolFilesList() {
           <div class="selected-file-name" title="${file.name}">${file.name}</div>
           <div class="selected-file-meta">
             <span class="file-size-badge">${formatFileSize(file.size)}</span>
-            <span class="file-ready-badge">✓ Ready to Convert</span>
+            <span class="file-ready-badge" style="display: inline-flex; align-items: center; gap: 4px;">${ICONS.check} <span>Ready to Convert</span></span>
           </div>
         </div>
         <div class="selected-file-actions">
@@ -1332,7 +1332,7 @@ function renderToolFilesList() {
             <div class="batch-card-name" title="${file.name}">${file.name}</div>
             <div class="batch-card-meta">
               <span>${formatFileSize(file.size)}</span>
-              ${isActive ? '<span class="batch-card-active-tag">👁️ Previewing</span>' : ''}
+              ${isActive ? `<span class="batch-card-active-tag" style="display: inline-flex; align-items: center; gap: 4px;">${ICONS.eye} <span>Previewing</span></span>` : ''}
             </div>
           </div>
           <button type="button" class="batch-card-remove" data-remove-idx="${idx}" title="Remove this file">
@@ -1463,13 +1463,7 @@ function renderToolOutputCanvasReady() {
       const srcUrl = URL.createObjectURL(file);
       previewContent = `<img src="${srcUrl}" class="output-ready-img" alt="${file.name}" />`;
     } else {
-      let icon = '📄';
-      if (/\.(pdf|docx?|pptx?|xlsx?)$/i.test(file.name)) icon = '📑';
-      else if (/\.(mp3|wav|ogg|flac|aac)$/i.test(file.name)) icon = '🎵';
-      else if (/\.(mp4|webm|mov|mkv)$/i.test(file.name)) icon = '🎬';
-      else if (/\.(obj|stl|fbx|gltf)$/i.test(file.name)) icon = '🧊';
-      else if (/\.(json|csv|xml|yaml)$/i.test(file.name)) icon = '📊';
-      previewContent = `<div class="output-ready-icon-big">${icon}</div>`;
+      previewContent = `<div class="output-ready-icon-big" style="display: flex; align-items: center; justify-content: center; width: 68px; height: 68px; color: #818CF8;">${getFileThumbIconSvg(file.name, file.type)}</div>`;
     }
 
     const ext = file.name.split('.').pop() || 'file';
@@ -1480,7 +1474,7 @@ function renderToolOutputCanvasReady() {
         <div class="batch-source-tabs-wrap">
           <div class="batch-source-tabs-label">
             <span>Tap file to inspect preview (${currentIdx + 1} of ${state.toolFiles.length}):</span>
-            <span>⚡ Batch Queue</span>
+            <span style="display: inline-flex; align-items: center; gap: 4px;">${ICONS.layers} <span>Batch Queue</span></span>
           </div>
           <div class="batch-source-tabs" id="batch-source-tabs">
             ${state.toolFiles.map((f, i) => `
@@ -1518,7 +1512,7 @@ function renderToolOutputCanvasReady() {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
             </svg>
-            <span>${isBatch ? `⚡ Convert All ${state.toolFiles.length} Files & Download ZIP` : '⚡ Convert & Download Output'}</span>
+            <span>${isBatch ? `Convert All ${state.toolFiles.length} Files & Download ZIP` : 'Convert & Download Output'}</span>
           </button>
           <p class="output-ready-hint">${isBatch ? `All ${state.toolFiles.length} files will be converted locally with your settings and bundled into a ZIP file.` : 'Click above or adjust conversion parameters on the left panel anytime.'}</p>
         </div>
@@ -1578,9 +1572,9 @@ function renderToolOutputEmptyState() {
       <h3 class="output-empty-title">Output Canvas Ready</h3>
       <p class="output-empty-desc">Choose a file on the left to preview, configure settings, and convert instantly.</p>
       <div class="output-empty-pills">
-        <span class="empty-pill">⚡ Real-time Rendering</span>
-        <span class="empty-pill">🔒 Private Local Processing</span>
-        <span class="empty-pill">🎯 Exact Aspect & Quality</span>
+        <span class="empty-pill">${ICONS.zap} <span>Real-time Rendering</span></span>
+        <span class="empty-pill">${ICONS.shield} <span>Private Local Processing</span></span>
+        <span class="empty-pill">${ICONS.target} <span>Exact Aspect & Quality</span></span>
       </div>
     </div>
   `;
@@ -1601,9 +1595,9 @@ function updateToolConvertButton() {
     btn.classList.add('btn-ready');
     if (text) {
       if (state.toolFiles.length > 1) {
-        text.textContent = `⚡ Convert All ${state.toolFiles.length} Files`;
+        text.textContent = `Convert All ${state.toolFiles.length} Files`;
       } else {
-        text.textContent = '⚡ Convert & Download';
+        text.textContent = 'Convert & Download';
       }
     }
   } else {
@@ -1773,7 +1767,7 @@ async function executeToolConversion() {
     
     const emptyTitle = document.querySelector('.output-empty-title');
     const emptyDesc = document.querySelector('.output-empty-desc');
-    if (emptyTitle) emptyTitle.textContent = '⚠️ Conversion Error';
+    if (emptyTitle) emptyTitle.innerHTML = `<span style="color: #EF4444; display: inline-flex; align-items: center; gap: 8px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> <span>Conversion Error</span></span>`;
     if (emptyDesc) emptyDesc.textContent = err.message || 'Something went wrong. Please check your file and try again.';
   } finally {
     if (convertBtn) {
@@ -1781,7 +1775,7 @@ async function executeToolConversion() {
       convertBtn.classList.add('btn-ready');
     }
     if (convertText) {
-      convertText.textContent = state.toolResult ? '⚡ Re-convert with Settings' : '⚡ Convert & Download';
+      convertText.textContent = state.toolResult ? 'Re-convert with Settings' : 'Convert & Download';
     }
   }
 }
@@ -1792,6 +1786,17 @@ async function executeToolConversion() {
 function showToolResult(tool, result, allResults) {
   document.getElementById('tool-output-processing').style.display = 'none';
   document.getElementById('tool-output-result').style.display = 'flex';
+
+  const statusPill = document.getElementById('tool-output-status-pill');
+  if (statusPill) {
+    statusPill.innerHTML = `${ICONS.check} <span>Conversion Complete</span>`;
+    statusPill.style.color = '#B5EF85';
+    statusPill.style.borderColor = 'rgba(181, 239, 133, 0.35)';
+    statusPill.style.background = 'rgba(181, 239, 133, 0.1)';
+    statusPill.style.display = 'inline-flex';
+    statusPill.style.alignItems = 'center';
+    statusPill.style.gap = '6px';
+  }
 
   const results = allResults && allResults.length > 0 ? allResults : (state.toolResults?.length > 0 ? state.toolResults : [result]);
   const isBatch = results.length > 1;
@@ -1805,12 +1810,12 @@ function showToolResult(tool, result, allResults) {
         <div class="result-files-tabs-wrap">
           <div class="result-files-tabs-header">
             <span>All ${results.length} files converted successfully! Tap to preview & download:</span>
-            <span class="tabs-hint">✓ Ready</span>
+            <span class="tabs-hint" style="display: inline-flex; align-items: center; gap: 4px;">${ICONS.check} <span>Ready</span></span>
           </div>
           <div class="result-files-tabs" id="result-files-tabs-list">
             ${results.map((r, i) => `
               <button type="button" class="result-file-tab ${i === state.selectedResultIdx ? 'active' : ''}" data-idx="${i}">
-                <span class="tab-check">✓</span>
+                <span class="tab-check">${ICONS.check}</span>
                 <span class="tab-name" title="${r.filename}">${r.filename}</span>
                 <span class="tab-size">${formatFileSize(r.blob?.size || r.outputSize || 0)}</span>
               </button>
@@ -1844,7 +1849,7 @@ function showToolResult(tool, result, allResults) {
   let statsHtml = '';
 
   if (isBatch) {
-    statsHtml += `<span class="stat-pill" style="background: rgba(99, 102, 241, 0.15); color: #818CF8; border-color: rgba(99, 102, 241, 0.3);">📦 File ${state.selectedResultIdx + 1} of ${results.length}</span>`;
+    statsHtml += `<span class="stat-pill" style="background: rgba(99, 102, 241, 0.15); color: #818CF8; border-color: rgba(99, 102, 241, 0.3); display: inline-flex; align-items: center; gap: 4px;">${ICONS.package} <span>File ${state.selectedResultIdx + 1} of ${results.length}</span></span>`;
   }
 
   if (isLatex) {
@@ -1867,7 +1872,7 @@ function showToolResult(tool, result, allResults) {
       statsHtml += `
         <span class="stat-pill"><span class="stat-value">${formatFileSize(result.originalSize)}</span> Original</span>
         <span class="stat-pill"><span class="stat-value">${formatFileSize(result.compressedSize)}</span> Output</span>
-        <span class="stat-pill savings-pill">🎯 <span class="stat-value">${result.savings}%</span> saved</span>
+        <span class="stat-pill savings-pill" style="display: inline-flex; align-items: center; gap: 4px;">${ICONS.target} <span><span class="stat-value">${result.savings}%</span> saved</span></span>
       `;
     } else if (result.originalSize && result.blob) {
       statsHtml += `
@@ -1915,7 +1920,9 @@ function showToolResult(tool, result, allResults) {
       const audioUrl = URL.createObjectURL(result.blob);
       previewEl.innerHTML = `
         <div class="audio-result-preview" style="padding: 24px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 16px; width: 100%;">
-          <span style="font-size: 3.5rem;">🎵</span>
+          <div class="audio-preview-icon" style="color: #818CF8; display: flex; align-items: center; justify-content: center; width: 68px; height: 68px; border-radius: 50%; background: rgba(129, 140, 248, 0.12); border: 1px solid rgba(129, 140, 248, 0.3);">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          </div>
           <div style="font-weight: 700; color: var(--text-primary); font-size: 1.05rem;">${result.filename}</div>
           <audio controls src="${audioUrl}" style="width: 100%; max-width: 440px; margin-top: 8px;"></audio>
         </div>
@@ -1950,7 +1957,7 @@ function showToolResult(tool, result, allResults) {
         <div class="latex-result-card">
           <div class="latex-card-banner">
             <div class="latex-banner-left">
-              <div class="latex-overleaf-icon">🍃</div>
+              <div class="latex-overleaf-icon" style="display: inline-flex; align-items: center; justify-content: center; color: #10B981;">${ICONS.leaf}</div>
               <div class="latex-banner-meta">
                 <div class="latex-banner-title-row">
                   <span class="latex-banner-title">Overleaf Ready LaTeX</span>
@@ -1979,8 +1986,9 @@ function showToolResult(tool, result, allResults) {
               </div>
               <div class="latex-code-actions">
                 <span>${result.stats?.lines || 0} lines • ${result.stats?.words || 0} words • UTF-8</span>
-                <button id="latex-inline-copy" type="button" class="latex-copy-shortcut" title="Copy LaTeX code to clipboard">
-                  <span>📋 Copy</span>
+                <button id="latex-inline-copy" type="button" class="latex-copy-shortcut" title="Copy LaTeX code to clipboard" style="display: inline-flex; align-items: center; gap: 4px;">
+                  ${ICONS.clipboard}
+                  <span>Copy</span>
                 </button>
               </div>
             </div>
@@ -1988,7 +1996,7 @@ function showToolResult(tool, result, allResults) {
           </div>
 
           <div class="latex-tips-card">
-            <span class="latex-tips-icon">💡</span>
+            <span class="latex-tips-icon" style="display: inline-flex; align-items: center; justify-content: center; color: #F59E0B;">${ICONS.bulb}</span>
             <div class="latex-tips-content">
               <strong>Overleaf 1-Click Upload:</strong> Download <code>${result.overleafZipName || 'project.zip'}</code>, then on <a href="https://www.overleaf.com/project" target="_blank" rel="noopener" style="color:#10B981; text-decoration:underline;">Overleaf</a> click <em>New Project → Upload Project</em>, drag & drop the ZIP, and click <em>Recompile</em>.
             </div>
@@ -2002,11 +2010,11 @@ function showToolResult(tool, result, allResults) {
           playClickSound();
           try {
             await navigator.clipboard.writeText(rawCode);
-            inlineCopy.innerHTML = '<span>✓ Copied!</span>';
+            inlineCopy.innerHTML = `${ICONS.check} <span>Copied!</span>`;
             inlineCopy.style.borderColor = '#10B981';
             inlineCopy.style.color = '#34D399';
             setTimeout(() => {
-              inlineCopy.innerHTML = '<span>📋 Copy</span>';
+              inlineCopy.innerHTML = `${ICONS.clipboard} <span>Copy</span>`;
               inlineCopy.style.borderColor = '';
               inlineCopy.style.color = '';
             }, 2000);
@@ -2037,8 +2045,9 @@ function showToolResult(tool, result, allResults) {
           ${isMd ? `
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 2px 4px;">
               <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">Markdown Output</span>
-              <button id="tool-open-studio-btn" type="button" class="btn btn-secondary" style="font-size: 0.78rem; padding: 4px 10px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
-                <span>✨ Edit in Live Studio</span>
+              <button id="tool-open-studio-btn" type="button" class="btn btn-secondary" style="font-size: 0.78rem; padding: 4px 10px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                ${ICONS.sparkles}
+                <span>Edit in Live Studio</span>
               </button>
             </div>
           ` : ''}
@@ -2056,15 +2065,11 @@ function showToolResult(tool, result, allResults) {
       }
     } else {
       // 3D / Office Document Placeholder preview
-      let docIcon = '📄';
-      if (result.filename?.match(/\.(obj|stl|fbx|gltf)$/i)) docIcon = '🧊';
-      else if (result.filename?.match(/\.(pptx|ppt)$/i)) docIcon = '📊';
-      else if (result.filename?.match(/\.(xlsx|xls|csv)$/i)) docIcon = '📈';
-      else if (result.filename?.match(/\.(docx|doc)$/i)) docIcon = '📘';
-
       previewEl.innerHTML = `
         <div class="preview-placeholder" style="padding: 32px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px;">
-          <span style="font-size: 3.5rem;">${docIcon}</span>
+          <div style="display: flex; align-items: center; justify-content: center; width: 64px; height: 64px; color: #818CF8;">
+            ${getFileThumbIconSvg(result.filename || 'document')}
+          </div>
           <div style="font-weight: 700; color: var(--text-primary); font-size: 1.1rem;">${result.filename}</div>
           <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0;">File generated successfully in memory. Click Download below to save to your device.</p>
         </div>
@@ -2077,16 +2082,17 @@ function showToolResult(tool, result, allResults) {
   if (actionsEl) {
     if (isBatch) {
       actionsEl.innerHTML = `
-        <button id="tool-download-zip-btn" type="button" class="btn btn-primary result-zip-btn" title="Download all ${results.length} converted files bundled in a single ZIP">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          <span>📦 Download All as ZIP (${results.length} Files • ${formatFileSize(state.batchZipBlob?.size || 0)})</span>
+        <button id="tool-download-zip-btn" type="button" class="btn btn-primary result-zip-btn" title="Download all ${results.length} converted files bundled in a single ZIP" style="display: inline-flex; align-items: center; gap: 8px;">
+          ${ICONS.package}
+          <span>Download All as ZIP (${results.length} Files • ${formatFileSize(state.batchZipBlob?.size || 0)})</span>
         </button>
         <button id="tool-download-single-btn" type="button" class="btn btn-secondary result-download-single-btn" title="Download only the currently selected file">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           <span>Download ${result.filename}</span>
         </button>
-        <button id="tool-convert-another-btn" type="button" class="btn btn-secondary btn-sm">
-          <span>↻ Convert Another</span>
+        <button id="tool-convert-another-btn" type="button" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          <span>Convert Another</span>
         </button>
       `;
 
@@ -2132,11 +2138,13 @@ function showToolResult(tool, result, allResults) {
           </svg>
           <span id="tool-download-text">${isLatex ? 'Download LaTeX (.tex)' : `Download ${result.filename}`}</span>
         </button>
-        <button id="tool-copy-btn" type="button" class="btn btn-secondary btn-sm" style="${(result.preview || isLatex) ? 'display: inline-flex;' : 'display: none;'}">
-          <span>📋 Copy to Clipboard</span>
+        <button id="tool-copy-btn" type="button" class="btn btn-secondary btn-sm" style="${(result.preview || isLatex) ? 'display: inline-flex; align-items: center; gap: 6px;' : 'display: none;'}">
+          ${ICONS.clipboard}
+          <span>Copy to Clipboard</span>
         </button>
-        <button id="tool-convert-another-btn" type="button" class="btn btn-secondary btn-sm">
-          <span>↻ Convert Another</span>
+        <button id="tool-convert-another-btn" type="button" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          <span>Convert Another</span>
         </button>
       `;
 
@@ -2159,8 +2167,8 @@ function showToolResult(tool, result, allResults) {
           const textToCopy = result.latex || result.preview || '';
           if (textToCopy) {
             await navigator.clipboard.writeText(textToCopy);
-            cpBtn.innerHTML = '<span>✓ Copied!</span>';
-            setTimeout(() => { cpBtn.innerHTML = '<span>📋 Copy to Clipboard</span>'; }, 2000);
+            cpBtn.innerHTML = `${ICONS.check} <span>Copied!</span>`;
+            setTimeout(() => { cpBtn.innerHTML = `${ICONS.clipboard} <span>Copy to Clipboard</span>`; }, 2000);
           }
         });
       }
@@ -2179,7 +2187,7 @@ function showToolResult(tool, result, allResults) {
   // Update left sticky action text so newbie knows they can re-convert or tweak settings anytime
   const convertText = document.getElementById('tool-convert-text');
   if (convertText) {
-    convertText.textContent = '⚡ Re-convert with Settings';
+    convertText.textContent = 'Re-convert with Settings';
   }
   const convertBtn = document.getElementById('tool-convert-btn');
   if (convertBtn) {
@@ -2527,7 +2535,7 @@ function renderBatchQueue() {
           <div class="queue-card-right">
             ${idx > 0 ? `<button class="queue-btn-icon move-up" title="Move up" data-action="move-up" data-idx="${idx}">↑</button>` : ''}
             ${idx < count - 1 ? `<button class="queue-btn-icon move-down" title="Move down" data-action="move-down" data-idx="${idx}">↓</button>` : ''}
-            <button class="queue-btn-icon" title="Open in Live Studio" data-action="open-studio" data-idx="${idx}">👁️</button>
+            <button class="queue-btn-icon" title="Open in Live Studio" data-action="open-studio" data-idx="${idx}">${ICONS.eye}</button>
             <button class="queue-btn-icon delete" title="Remove from queue" data-action="delete" data-idx="${idx}">✕</button>
           </div>
         </div>
@@ -2963,7 +2971,7 @@ function setupStudioEditor() {
       const paperContent = document.getElementById('paper-content');
       if (paperContent) {
         navigator.clipboard.writeText(paperContent.innerHTML);
-        btnCopyHtml.textContent = '✓ Copied!';
+        btnCopyHtml.innerHTML = `${ICONS.check} <span>Copied!</span>`;
         setTimeout(() => btnCopyHtml.textContent = 'Copy HTML', 2000);
       }
     });
@@ -3126,7 +3134,7 @@ function updateLivePreview() {
   if (pagesCounter) pagesCounter.textContent = `Est. ${stats.estimatedPages} ${stats.estimatedPages === 1 ? 'page' : 'pages'}`;
 
   if (floatingPillSub) {
-    floatingPillSub.textContent = `⚡ ${stats.words} words • 1-Click`;
+    floatingPillSub.innerHTML = `${ICONS.zap} <span>${stats.words} words • 1-Click</span>`;
   }
 
   const metaBadge = document.getElementById('preview-meta-badge');

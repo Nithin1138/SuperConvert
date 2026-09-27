@@ -1,3 +1,5 @@
+import { ICONS } from '../core/icons.js';
+
 export function renderPricingModal() {
   return `
     <div id="modal-pricing" class="modal-backdrop">
@@ -22,10 +24,10 @@ export function renderPricingModal() {
                   Ideal for casual developers, students, and personal note taking.
                 </p>
                 <ul class="pricing-features">
-                  <li><span class="pricing-check">✓</span> 100% Client-side conversions</li>
-                  <li><span class="pricing-check">✓</span> Unlimited document compiles</li>
-                  <li><span class="pricing-check">✓</span> All 5 typography presets</li>
-                  <li><span class="pricing-check">✓</span> Direct Vector Print output</li>
+                  <li><span class="pricing-check">${ICONS.check}</span> 100% Client-side conversions</li>
+                  <li><span class="pricing-check">${ICONS.check}</span> Unlimited document compiles</li>
+                  <li><span class="pricing-check">${ICONS.check}</span> All 5 typography presets</li>
+                  <li><span class="pricing-check">${ICONS.check}</span> Direct Vector Print output</li>
                 </ul>
               </div>
               <button class="btn btn-secondary btn-sm" style="width: 100%;" data-close="modal-pricing">Current Plan</button>
@@ -40,11 +42,11 @@ export function renderPricingModal() {
                   For freelancers, consultants, and power documentation writers.
                 </p>
                 <ul class="pricing-features">
-                  <li><span class="pricing-check">✓</span> Everything in Free</li>
-                  <li><span class="pricing-check">✓</span> Custom CSS & font uploads</li>
-                  <li><span class="pricing-check">✓</span> Multi-file batch compilation</li>
-                  <li><span class="pricing-check">✓</span> Custom watermark & branding</li>
-                  <li><span class="pricing-check">✓</span> Priority bugfix support</li>
+                  <li><span class="pricing-check">${ICONS.check}</span> Everything in Free</li>
+                  <li><span class="pricing-check">${ICONS.check}</span> Custom CSS & font uploads</li>
+                  <li><span class="pricing-check">${ICONS.check}</span> Multi-file batch compilation</li>
+                  <li><span class="pricing-check">${ICONS.check}</span> Custom watermark & branding</li>
+                  <li><span class="pricing-check">${ICONS.check}</span> Priority bugfix support</li>
                 </ul>
               </div>
               <button class="btn btn-primary btn-sm" style="width: 100%;" onclick="alert('SuperConvert Pro checkout mock activated!')">Upgrade to Pro</button>
@@ -59,10 +61,10 @@ export function renderPricingModal() {
                   High-scale headless automation for apps, CI/CD, and document portals.
                 </p>
                 <ul class="pricing-features">
-                  <li><span class="pricing-check">✓</span> 50,000 API conversions/mo</li>
-                  <li><span class="pricing-check">✓</span> Webhooks & streaming responses</li>
-                  <li><span class="pricing-check">✓</span> 99.99% Edge SLA</li>
-                  <li><span class="pricing-check">✓</span> Dedicated support Slack</li>
+                  <li><span class="pricing-check">${ICONS.check}</span> 50,000 API conversions/mo</li>
+                  <li><span class="pricing-check">${ICONS.check}</span> Webhooks & streaming responses</li>
+                  <li><span class="pricing-check">${ICONS.check}</span> 99.99% Edge SLA</li>
+                  <li><span class="pricing-check">${ICONS.check}</span> Dedicated support Slack</li>
                 </ul>
               </div>
               <button class="btn btn-secondary btn-sm" style="width: 100%;" onclick="alert('Enterprise API registration mock activated!')">Get API Key</button>

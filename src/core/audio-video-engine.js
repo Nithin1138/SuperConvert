@@ -116,9 +116,10 @@ function writeFloat32(output, offset, input) {
 /**
  * Convert Audio to WAV
  */
-export async function convertAudioToWav(file) {
+export async function convertAudioToWav(file, settings = {}) {
   const audioBuffer = await decodeAudioFromFile(file);
-  const blob = audioBufferToWav(audioBuffer);
+  const isFloat = settings.bitDepth === '32-bit Float';
+  const blob = audioBufferToWav(audioBuffer, { float32: isFloat });
   const baseName = file.name.replace(/\.[^.]+$/, '');
   return {
     blob,
@@ -280,7 +281,7 @@ export async function processAudioVideoTool(toolId, file, settings = {}) {
   switch (toolId) {
     case 'audio-to-wav':
     case 'mp3-to-wav':
-      return convertAudioToWav(file);
+      return convertAudioToWav(file, settings);
 
     case 'audio-to-mp3':
     case 'wav-to-mp3':

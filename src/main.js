@@ -72,6 +72,15 @@ const state = {
   currentDocTitle: 'architecture-spec.md',
   proPrice: '$2.99',
   
+  // Studio Document Conversion & Typography Settings
+  docSettings: {
+    fontFamily: 'Inter, system-ui, sans-serif',
+    fontSize: '11pt',
+    lineHeight: '1.5',
+    pdfQuality: 2, // 150 DPI
+    showPageNumbers: true
+  },
+
   // Batch Queue
   batchFiles: [],
   batchStrategy: 'combine', // 'combine' or 'separate'
@@ -725,11 +734,15 @@ function activateUniversalTool(tool) {
   document.getElementById('tool-convert-btn').disabled = !tool.hasTextInput;
 
   // Text input setup & LaTeX sample button
-  const isLatex = tool.id === 'text-to-latex' || tool.id === 'file-to-latex' || tool.engine === 'latex';
+  const isLatexGenerator = tool.id === 'text-to-latex' || tool.id === 'file-to-latex';
+  const isLatexConsumer = tool.id === 'latex-to-pdf' || tool.id === 'latex-to-docx';
+  const isLatex = isLatexGenerator || isLatexConsumer || tool.engine === 'latex';
   const textInput = document.getElementById('tool-text-input');
   if (textInput) {
     textInput.value = '';
-    if (isLatex) {
+    if (isLatexConsumer) {
+      textInput.placeholder = 'Paste or type your LaTeX code (.tex) here...\n\nExample:\n\\documentclass{article}\n\\usepackage{amsmath}\n\\begin{document}\n\\title{Quantum Computing Foundations}\n\\author{Dr. Alan Turing}\n\\maketitle\n\n\\section{Introduction}\nQuantum superposition state:\n\\begin{equation}\n|\\psi\\rangle = \\alpha|0\\rangle + \\beta|1\\rangle\n\\end{equation}\n\\end{document}';
+    } else if (isLatexGenerator) {
       textInput.placeholder = 'Paste or type your notes, academic paper, or Markdown here...\n\nExample:\n# Modern Machine Learning\n\nDeep networks optimize parameter weights via backpropagation.\n\n## Objective Function\n$$\\mathcal{L}(\\theta) = \\frac{1}{N}\\sum_{i=1}^N \\ell(f_\\theta(x_i), y_i) + \\lambda\\|\\theta\\|^2$$\n\n- Theorem 1: Convergence bounds\n- Theorem 2: Generalization error';
     } else {
       textInput.placeholder = 'Paste your content here...';
@@ -746,11 +759,60 @@ function activateUniversalTool(tool) {
     sampleBtn.id = 'tool-latex-sample-btn';
     sampleBtn.type = 'button';
     sampleBtn.className = 'latex-sample-btn';
-    sampleBtn.innerHTML = '<span>✨ Load Sample Paper</span>';
+    sampleBtn.innerHTML = isLatexConsumer ? '<span>✨ Load Sample LaTeX</span>' : '<span>✨ Load Sample Paper</span>';
     sampleBtn.addEventListener('click', (e) => {
       e.preventDefault();
       playClickSound();
-      textInput.value = `# Deep Residual Attention Networks
+      if (isLatexConsumer) {
+        textInput.value = `\\documentclass{article}
+\\usepackage{amsmath}
+\\usepackage{booktabs}
+
+\\title{Deep Residual Attention Networks: Convergence & Bounds}
+\\author{Dr. Elena Rostova \\and Prof. Marcus Vance}
+\\date{\\today}
+
+\\begin{document}
+\\maketitle
+
+\\begin{abstract}
+We demonstrate that deep residual connections combined with scaled dot-product attention guarantee stable gradient flow and linear convergence in ultra-deep transformer representations.
+\\end{abstract}
+
+\\section{Introduction}
+Deep multi-head attention mechanisms compute queries, keys, and values across hidden representation subspaces:
+\\begin{equation}
+\\text{Attention}(Q, K, V) = \\text{softmax}\\left(\\frac{QK^T}{\\sqrt{d_k}}\\right)V
+\\end{equation}
+
+\\section{Theoretical Foundations}
+Let $\\mathcal{L}(\\theta)$ denote the empirical loss function with weight decay regularization parameter $\\lambda > 0$:
+\\begin{equation}
+\\min_{\\theta \\in \\mathbb{R}^d} \\frac{1}{N}\\sum_{i=1}^N \\ell(f_\\theta(x_i), y_i) + \\frac{\\lambda}{2}\\|\\theta\\|_2^2
+\\end{equation}
+
+\\section{Benchmark Evaluations}
+Table~\\ref{tab:results} summarizes accuracy across layer configurations:
+\\begin{table}[htbp]
+\\centering
+\\begin{tabular}{lcccc}
+\\toprule
+\\textbf{Architecture} & \\textbf{Layers} & \\textbf{Hidden Dim} & \\textbf{Heads} & \\textbf{Top-1 Acc} \\\\
+\\midrule
+ResAttn-Small & 12 & 512 & 8 & 84.6\\% \\\\
+ResAttn-Base & 24 & 768 & 12 & 88.2\\% \\\\
+ResAttn-Large & 36 & 1024 & 16 & 91.5\\% \\\\
+\\bottomrule
+\\end{tabular}
+\\caption{Comparative empirical accuracy across model scales.}
+\\label{tab:results}
+\\end{table}
+
+\\section{Conclusion}
+The proposed formulation achieves empirical validation across standard benchmarks.
+\\end{document}`;
+      } else {
+        textInput.value = `# Deep Residual Attention Networks
 
 Deep residual attention architectures combine skip connections with multi-head self-attention mechanisms to stabilize training in ultra-deep neural networks.
 
@@ -784,6 +846,7 @@ class ResidualAttentionBlock(nn.Module):
     def forward(self, x):
         return x + self.attn(self.norm(x), self.norm(x), self.norm(x))[0]
 \`\`\``;
+      }
       state.toolTextInput = textInput.value;
       updateToolConvertButton();
     });
@@ -806,60 +869,134 @@ function renderToolSettings(tool) {
   const panel = document.getElementById('tool-settings-panel');
   const block = document.getElementById('tool-settings-block');
   const stepHeading = document.getElementById('tool-settings-step-heading');
+  const countBadge = document.getElementById('tool-settings-count-badge');
+  const presetsBar = document.getElementById('tool-settings-presets');
+  const resetBtn = document.getElementById('tool-settings-reset');
   const body = document.getElementById('tool-settings-body');
 
   if (!tool.settings || tool.settings.length === 0) {
     if (panel) panel.style.display = 'none';
     if (block) block.style.display = 'none';
     if (stepHeading) stepHeading.style.display = 'none';
+    if (countBadge) countBadge.style.display = 'none';
     return;
   }
 
   if (panel) panel.style.display = 'block';
   if (block) block.style.display = 'block';
   if (stepHeading) stepHeading.style.display = 'flex';
+  if (countBadge) {
+    countBadge.textContent = `${tool.settings.length} Settings`;
+    countBadge.style.display = 'inline-flex';
+  }
 
+  // 1. Render Quick Presets Bar
+  if (presetsBar) {
+    if (tool.presets && tool.presets.length > 0) {
+      presetsBar.style.display = 'flex';
+      presetsBar.innerHTML = `
+        <div class="presets-bar-header">
+          <span class="presets-bar-title">⚡ Quick Presets:</span>
+        </div>
+        <div class="presets-chips">
+          ${tool.presets.map((preset, idx) => `
+            <button type="button" class="settings-preset-chip" data-preset-idx="${idx}">
+              ${preset.label}
+            </button>
+          `).join('')}
+        </div>
+      `;
+
+      // Preset click listener
+      presetsBar.querySelectorAll('.settings-preset-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          const idx = parseInt(chip.dataset.presetIdx, 10);
+          const preset = tool.presets[idx];
+          if (!preset || !preset.settings) return;
+
+          // Toggle active class
+          presetsBar.querySelectorAll('.settings-preset-chip').forEach(c => c.classList.remove('active'));
+          chip.classList.add('active');
+
+          // Apply settings
+          Object.entries(preset.settings).forEach(([key, val]) => {
+            state.toolSettings[key] = val;
+            const input = body?.querySelector(`[data-setting-id="${key}"]`);
+            if (input) {
+              if (input.type === 'checkbox') {
+                input.checked = Boolean(val);
+              } else {
+                input.value = val;
+              }
+              // If range, update span display
+              if (input.type === 'range') {
+                const setting = tool.settings.find(s => s.id === key);
+                const valSpan = document.getElementById(`setting-val-${key}`);
+                if (valSpan) valSpan.textContent = `${val}${setting?.unit || ''}`;
+              }
+            }
+          });
+        });
+      });
+    } else {
+      presetsBar.style.display = 'none';
+      presetsBar.innerHTML = '';
+    }
+  }
+
+  // 2. Render Settings Controls
   const settingsHtml = tool.settings.map(setting => {
     let controlHtml = '';
+    const currentVal = state.toolSettings[setting.id] !== undefined ? state.toolSettings[setting.id] : setting.default;
 
     switch (setting.type) {
       case 'range':
         controlHtml = `
           <div class="setting-control">
             <input type="range" class="setting-range" data-setting-id="${setting.id}" 
-                   min="${setting.min}" max="${setting.max}" value="${setting.default}" />
-            <span class="setting-value" id="setting-val-${setting.id}">${setting.default}${setting.unit || ''}</span>
+                   min="${setting.min}" max="${setting.max}" value="${currentVal}" />
+            <span class="setting-value" id="setting-val-${setting.id}">${currentVal}${setting.unit || ''}</span>
           </div>
         `;
         break;
       case 'select':
         controlHtml = `
           <select class="setting-select" id="setting-${setting.id}" data-setting-id="${setting.id}">
-            ${setting.options.map(opt => `<option value="${opt}" ${opt === setting.default ? 'selected' : ''}>${opt}</option>`).join('')}
+            ${setting.options.map(opt => {
+              const val = typeof opt === 'object' && opt !== null ? opt.value : opt;
+              const lbl = typeof opt === 'object' && opt !== null ? opt.label : opt;
+              return `<option value="${val}" ${String(val) === String(currentVal) ? 'selected' : ''}>${lbl}</option>`;
+            }).join('')}
           </select>
         `;
         break;
       case 'text':
-        controlHtml = `<input type="text" class="setting-text" id="setting-${setting.id}" data-setting-id="${setting.id}" value="${setting.default || ''}" />`;
+        controlHtml = `<input type="text" class="setting-text" id="setting-${setting.id}" data-setting-id="${setting.id}" value="${currentVal || ''}" />`;
         break;
       case 'number':
-        controlHtml = `<input type="number" class="setting-number" id="setting-${setting.id}" data-setting-id="${setting.id}" value="${setting.default || ''}" />`;
+        controlHtml = `<input type="number" class="setting-number" id="setting-${setting.id}" data-setting-id="${setting.id}" value="${currentVal !== undefined ? currentVal : ''}" />`;
         break;
       case 'checkbox':
         controlHtml = `
-          <div class="setting-checkbox-wrap">
-            <input type="checkbox" id="setting-${setting.id}" data-setting-id="${setting.id}" ${setting.default ? 'checked' : ''} />
-          </div>
+          <label class="setting-switch" for="setting-${setting.id}" title="${setting.label}">
+            <input type="checkbox" id="setting-${setting.id}" data-setting-id="${setting.id}" ${currentVal ? 'checked' : ''} />
+            <span class="setting-slider"></span>
+          </label>
         `;
         break;
       case 'color':
-        controlHtml = `<input type="color" class="setting-color" id="setting-${setting.id}" data-setting-id="${setting.id}" value="${setting.default || '#ffffff'}" />`;
+        controlHtml = `<input type="color" class="setting-color" id="setting-${setting.id}" data-setting-id="${setting.id}" value="${currentVal || '#ffffff'}" />`;
         break;
     }
 
+    const hintHtml = setting.hint ? `<span class="setting-hint">${setting.hint}</span>` : '';
+
     return `
       <div class="setting-row">
-        <span class="setting-label">${setting.label}</span>
+        <div class="setting-info">
+          <span class="setting-label">${setting.label}</span>
+          ${hintHtml}
+        </div>
         ${controlHtml}
       </div>
     `;
@@ -867,12 +1004,12 @@ function renderToolSettings(tool) {
 
   if (body) body.innerHTML = settingsHtml;
 
-  // Attach event listeners for settings changes
+  // 3. Attach event listeners for settings changes
   body?.querySelectorAll('[data-setting-id]').forEach(el => {
     const settingId = el.dataset.settingId;
     const eventType = el.type === 'range' ? 'input' : 'change';
 
-    el.addEventListener(eventType, (e) => {
+    el.addEventListener(eventType, () => {
       const val = el.type === 'checkbox' ? el.checked : el.value;
       state.toolSettings[settingId] = el.type === 'number' ? Number(val) : val;
 
@@ -882,8 +1019,36 @@ function renderToolSettings(tool) {
         const valSpan = document.getElementById(`setting-val-${settingId}`);
         if (valSpan) valSpan.textContent = `${val}${setting?.unit || ''}`;
       }
+
+      // Any manual change deselects presets
+      presetsBar?.querySelectorAll('.settings-preset-chip').forEach(c => c.classList.remove('active'));
     });
   });
+
+  // 4. Attach Reset to Defaults button
+  if (resetBtn) {
+    const newResetBtn = resetBtn.cloneNode(true);
+    resetBtn.parentNode.replaceChild(newResetBtn, resetBtn);
+    newResetBtn.addEventListener('click', () => {
+      tool.settings.forEach(s => {
+        state.toolSettings[s.id] = s.default;
+        const input = body?.querySelector(`[data-setting-id="${s.id}"]`);
+        if (input) {
+          if (input.type === 'checkbox') {
+            input.checked = Boolean(s.default);
+          } else {
+            input.value = s.default;
+          }
+          if (input.type === 'range') {
+            const valSpan = document.getElementById(`setting-val-${s.id}`);
+            if (valSpan) valSpan.textContent = `${s.default}${s.unit || ''}`;
+          }
+        }
+      });
+      // Clear preset selection
+      presetsBar?.querySelectorAll('.settings-preset-chip').forEach(c => c.classList.remove('active'));
+    });
+  }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1145,7 +1310,7 @@ async function executeToolConversion() {
         result = await processAudioVideoTool(tool.id, input, state.toolSettings);
         break;
       case '3d':
-        result = await convert3DModel(input, state.toolSettings?.targetFormat || tool.outputFormat);
+        result = await convert3DModel(input, state.toolSettings?.targetFormat || tool.outputFormat, state.toolSettings);
         break;
       case 'data':
         result = await processDataTool(tool.id, input, state.toolSettings);
@@ -1188,7 +1353,7 @@ function showToolResult(tool, result) {
   document.getElementById('tool-output-processing').style.display = 'none';
   document.getElementById('tool-output-result').style.display = 'flex';
 
-  const isLatex = result.isLatex || tool.engine === 'latex' || result.filename?.endsWith('.tex');
+  const isLatex = (result.isLatex || tool.id === 'text-to-latex' || tool.id === 'file-to-latex' || result.filename?.endsWith('.tex')) && !result.filename?.match(/\.(pdf|docx)$/i);
 
   // Stats
   const statsEl = document.getElementById('tool-result-stats');
@@ -2086,6 +2251,74 @@ function setupStudioEditor() {
     }
   }
 
+  // Studio Document Conversion & Typography Settings Popover
+  const btnDocSettings = document.getElementById('btn-doc-settings');
+  const docSettingsPopover = document.getElementById('doc-settings-popover');
+  const btnCloseDocSettings = document.getElementById('btn-close-doc-settings');
+  const docFontFamily = document.getElementById('doc-font-family');
+  const docFontSize = document.getElementById('doc-font-size');
+  const docLineSpacing = document.getElementById('doc-line-spacing');
+  const docPdfDpi = document.getElementById('doc-pdf-dpi');
+  const docShowPageNumbers = document.getElementById('doc-show-page-numbers');
+
+  if (btnDocSettings && docSettingsPopover) {
+    btnDocSettings.addEventListener('click', (e) => {
+      e.stopPropagation();
+      playClickSound();
+      const isVisible = docSettingsPopover.style.display !== 'none';
+      docSettingsPopover.style.display = isVisible ? 'none' : 'block';
+      btnDocSettings.classList.toggle('active', !isVisible);
+    });
+
+    if (btnCloseDocSettings) {
+      btnCloseDocSettings.addEventListener('click', (e) => {
+        e.stopPropagation();
+        docSettingsPopover.style.display = 'none';
+        btnDocSettings.classList.remove('active');
+      });
+    }
+
+    document.addEventListener('click', (e) => {
+      if (docSettingsPopover.style.display !== 'none' && !docSettingsPopover.contains(e.target) && e.target !== btnDocSettings) {
+        docSettingsPopover.style.display = 'none';
+        btnDocSettings.classList.remove('active');
+      }
+    });
+
+    if (docFontFamily) {
+      docFontFamily.addEventListener('change', (e) => {
+        state.docSettings.fontFamily = e.target.value;
+        updateLivePreview();
+      });
+    }
+
+    if (docFontSize) {
+      docFontSize.addEventListener('change', (e) => {
+        state.docSettings.fontSize = e.target.value;
+        updateLivePreview();
+      });
+    }
+
+    if (docLineSpacing) {
+      docLineSpacing.addEventListener('change', (e) => {
+        state.docSettings.lineHeight = e.target.value;
+        updateLivePreview();
+      });
+    }
+
+    if (docPdfDpi) {
+      docPdfDpi.addEventListener('change', (e) => {
+        state.docSettings.pdfQuality = Number(e.target.value);
+      });
+    }
+
+    if (docShowPageNumbers) {
+      docShowPageNumbers.addEventListener('change', (e) => {
+        state.docSettings.showPageNumbers = e.target.checked;
+      });
+    }
+  }
+
   const btnExportPdf = document.getElementById('btn-export-pdf');
   const btnExportText = document.getElementById('btn-export-text');
   const btnVectorPrint = document.getElementById('btn-vector-print');
@@ -2110,7 +2343,9 @@ function setupStudioEditor() {
         filename: `${outName}.pdf`,
         format: state.format,
         orientation: state.orientation,
-        margin: state.margin
+        margin: state.margin,
+        scale: Number(state.docSettings?.pdfQuality) || 2,
+        showPageNumbers: state.docSettings?.showPageNumbers !== false
       });
       playSuccessChime();
     } catch (err) {
@@ -2257,6 +2492,11 @@ function updateLivePreview() {
 
   paperSheet.className = `paper-sheet theme-${state.theme}`;
   paperSheet.style.padding = `${state.margin * 2}px`;
+  if (state.docSettings) {
+    if (state.docSettings.fontFamily) paperContent.style.fontFamily = state.docSettings.fontFamily;
+    if (state.docSettings.fontSize) paperContent.style.fontSize = state.docSettings.fontSize;
+    if (state.docSettings.lineHeight) paperContent.style.lineHeight = state.docSettings.lineHeight;
+  }
   paperContent.innerHTML = metaHtml + html;
 
   if (state.watermark.trim()) {

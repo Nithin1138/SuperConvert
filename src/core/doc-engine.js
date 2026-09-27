@@ -621,10 +621,18 @@ export async function pdfToDocx(pdfFile, filename = 'document.docx') {
 /**
  * PDF → JPG Image Converter using pdfjs-dist
  */
-export async function pdfToJpg(pdfFile, filename = 'document.jpg') {
+export async function pdfToJpg(pdfFile, filename = 'document.jpg', settings = {}) {
   const pdf = await loadPdfDocument(pdfFile);
-  const page = await pdf.getPage(1);
-  const viewport = page.getViewport({ scale: 2.0 });
+  const targetPage = Math.min(Math.max(1, Number(settings.pageNumber || 1)), pdf.numPages || 1);
+  const page = await pdf.getPage(targetPage);
+  
+  let scale = 2.0;
+  if (typeof settings.dpi === 'string') {
+    if (settings.dpi.includes('72 DPI')) scale = 1.0;
+    else if (settings.dpi.includes('150 DPI')) scale = 2.0;
+    else if (settings.dpi.includes('300 DPI')) scale = 3.5;
+  }
+  const viewport = page.getViewport({ scale });
 
   const canvas = document.createElement('canvas');
   canvas.width = viewport.width;
@@ -633,14 +641,19 @@ export async function pdfToJpg(pdfFile, filename = 'document.jpg') {
 
   await page.render({ canvasContext: ctx, viewport }).promise;
 
-  const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.95));
+  const outFmt = settings.outputFormat || '.jpg';
+  const mime = outFmt === '.png' ? 'image/png' : outFmt === '.webp' ? 'image/webp' : 'image/jpeg';
+  const quality = (settings.quality || 92) / 100;
+
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, mime, quality));
   const baseName = filename.replace(/\.[^.]+$/, '');
   return {
     blob,
-    filename: `${baseName}.jpg`,
+    filename: `${baseName}${outFmt}`,
     originalSize: pdfFile.size || 0,
     outputSize: blob.size,
-    pageCount: pdf.numPages
+    pageCount: pdf.numPages,
+    extractedPage: targetPage
   };
 }
 
@@ -656,7 +669,7 @@ export async function processDocTool(toolId, input, settings = {}) {
   switch (toolId) {
     case 'pdf-to-jpg':
     case 'pdf-to-img': {
-      return pdfToJpg(input, `${baseName}.jpg`);
+      return pdfToJpg(input, `${baseName}.jpg`, settings);
     }
 
     case 'png-to-pdf':
@@ -667,7 +680,7 @@ export async function processDocTool(toolId, input, settings = {}) {
 
     case 'pdf-to-docx':
     case 'pdf-to-word': {
-      return pdfToDocx(input, `${baseName}.docx`);
+      return pdfToDocx(input, `${baseName}.docx`, settings);
     }
 
     case 'docx-to-pdf':
@@ -711,19 +724,19 @@ export async function processDocTool(toolId, input, settings = {}) {
 
     case 'pdf-to-text':
     case 'doc-to-txt': {
-      return pdfToText(input, `${baseName}.txt`);
+      return pdfToText(input, `${baseName}.txt`, settings);
     }
 
     case 'doc-to-pptx':
     case 'pdf-to-pptx':
     case 'pptx': {
-      return createPptxPresentation(input, `${baseName}.pptx`);
+      return createPptxPresentation(input, `${baseName}.pptx`, settings);
     }
 
     case 'doc-to-xlsx':
     case 'csv-to-xlsx':
     case 'xlsx': {
-      return documentToXlsx(input, `${baseName}.xlsx`);
+      return documentToXlsx(input, `${baseName}.xlsx`, settings);
     }
 
     case 'text-to-md':
@@ -734,6 +747,14 @@ export async function processDocTool(toolId, input, settings = {}) {
       return textToMarkdown(input, `${baseName}.md`, settings);
     }
 
+    case 'latex-to-pdf':
+    case 'tex-to-pdf':
+    case 'latex-pdf':
+    case 'latex-to-docx':
+    case 'tex-to-docx':
+    case 'latex-docx':
+    case 'latex-to-word':
+    case 'tex-to-word':
     case 'text-to-latex':
     case 'file-to-latex':
     case 'md-to-latex':

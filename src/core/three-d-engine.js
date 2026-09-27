@@ -231,7 +231,7 @@ export function meshToGltf(mesh) {
 /**
  * Master 3D Converter
  */
-export async function convert3DModel(file, targetFormat = '.stl') {
+export async function convert3DModel(file, targetFormat = '.stl', settings = {}) {
   const baseName = file.name.replace(/\.[^.]+$/, '');
   const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
   const cleanTarget = targetFormat.startsWith('.') ? targetFormat.toLowerCase() : `.${targetFormat.toLowerCase()}`;
@@ -250,6 +250,43 @@ export async function convert3DModel(file, targetFormat = '.stl') {
     } catch (_) {
       mesh = await parseStl(file);
     }
+  }
+
+  // Apply scale
+  if (settings.unitScale) {
+    let scale = 1.0;
+    if (typeof settings.unitScale === 'string') {
+      const match = settings.unitScale.match(/^([\d.]+)/);
+      if (match) scale = parseFloat(match[1]);
+    } else if (typeof settings.unitScale === 'number') {
+      scale = settings.unitScale;
+    }
+    if (scale !== 1.0 && !isNaN(scale) && scale > 0) {
+      mesh.vertices = mesh.vertices.map(v => [v[0] * scale, v[1] * scale, v[2] * scale]);
+    }
+  }
+
+  // Center geometry at origin (0, 0, 0)
+  if (settings.centerOrigin && mesh.vertices.length > 0) {
+    let minX = Infinity, minY = Infinity, minZ = Infinity;
+    let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+    for (const v of mesh.vertices) {
+      if (v[0] < minX) minX = v[0];
+      if (v[0] > maxX) maxX = v[0];
+      if (v[1] < minY) minY = v[1];
+      if (v[1] > maxY) maxY = v[1];
+      if (v[2] < minZ) minZ = v[2];
+      if (v[2] > maxZ) maxZ = v[2];
+    }
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    const cz = (minZ + maxZ) / 2;
+    mesh.vertices = mesh.vertices.map(v => [v[0] - cx, v[1] - cy, v[2] - cz]);
+  }
+
+  // Invert normals
+  if (settings.invertNormals && mesh.faces.length > 0) {
+    mesh.faces = mesh.faces.map(f => [f[0], f[2], f[1]]);
   }
 
   let blob;

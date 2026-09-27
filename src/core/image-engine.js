@@ -362,9 +362,33 @@ export async function convertImageFormat(file, targetFormat, settings = {}) {
   const img = await loadImage(file);
   const cleanTarget = targetFormat.startsWith('.') ? targetFormat.toLowerCase() : `.${targetFormat.toLowerCase()}`;
   
+  let scale = 1.0;
+  if (typeof settings.scale === 'string') {
+    if (settings.scale.includes('75%')) scale = 0.75;
+    else if (settings.scale.includes('50%')) scale = 0.50;
+    else if (settings.scale.includes('25%')) scale = 0.25;
+  } else if (typeof settings.scale === 'number') {
+    scale = settings.scale;
+  }
+
+  let rotationAngle = 0;
+  if (typeof settings.rotation === 'string') {
+    if (settings.rotation.includes('90°')) rotationAngle = 90;
+    else if (settings.rotation.includes('180°')) rotationAngle = 180;
+    else if (settings.rotation.includes('270°')) rotationAngle = 270;
+  }
+
+  const w = Math.max(1, Math.round(img.naturalWidth * scale));
+  const h = Math.max(1, Math.round(img.naturalHeight * scale));
+
   const canvas = document.createElement('canvas');
-  canvas.width = img.naturalWidth;
-  canvas.height = img.naturalHeight;
+  if (rotationAngle === 90 || rotationAngle === 270) {
+    canvas.width = h;
+    canvas.height = w;
+  } else {
+    canvas.width = w;
+    canvas.height = h;
+  }
   
   const ctx = canvas.getContext('2d');
   
@@ -373,8 +397,27 @@ export async function convertImageFormat(file, targetFormat, settings = {}) {
     ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
-  
-  ctx.drawImage(img, 0, 0);
+
+  if (settings.colorFilter) {
+    if (settings.colorFilter.includes('Grayscale')) ctx.filter = 'grayscale(100%)';
+    else if (settings.colorFilter.includes('Sepia')) ctx.filter = 'sepia(100%)';
+    else if (settings.colorFilter.includes('High Contrast')) ctx.filter = 'contrast(160%)';
+    else if (settings.colorFilter.includes('Invert')) ctx.filter = 'invert(100%)';
+  }
+
+  ctx.save();
+  if (rotationAngle === 90) {
+    ctx.translate(canvas.width, 0);
+    ctx.rotate((90 * Math.PI) / 180);
+  } else if (rotationAngle === 180) {
+    ctx.translate(canvas.width, canvas.height);
+    ctx.rotate((180 * Math.PI) / 180);
+  } else if (rotationAngle === 270) {
+    ctx.translate(0, canvas.height);
+    ctx.rotate((270 * Math.PI) / 180);
+  }
+  ctx.drawImage(img, 0, 0, w, h);
+  ctx.restore();
   
   let blob;
   if (cleanTarget === '.bmp') {
@@ -658,7 +701,7 @@ export async function processImageTool(toolId, file, settings = {}) {
       return convertImageFormat(file, '.webp', settings);
     case 'png-to-ico':
     case 'image-to-ico':
-      return convertImageToIco(file);
+      return convertImageToIco(file, settings);
     case 'png-to-bmp':
     case 'image-to-bmp':
       return convertImageFormat(file, '.bmp', settings);
@@ -685,19 +728,45 @@ export async function processImageTool(toolId, file, settings = {}) {
 /**
  * Convert Image to ICO Favicon format
  */
-export async function convertImageToIco(file) {
+export async function convertImageToIco(file, settings = {}) {
+  let size = 64;
+  if (typeof settings.icoSize === 'string') {
+    if (settings.icoSize.includes('16x16')) size = 16;
+    else if (settings.icoSize.includes('32x32')) size = 32;
+    else if (settings.icoSize.includes('48x48')) size = 48;
+    else if (settings.icoSize.includes('64x64')) size = 64;
+    else if (settings.icoSize.includes('128x128')) size = 128;
+    else if (settings.icoSize.includes('256x256')) size = 256;
+  }
   const img = await loadImage(file);
   const canvas = document.createElement('canvas');
-  canvas.width = 64;
-  canvas.height = 64;
+  canvas.width = size;
+  canvas.height = size;
   const ctx = canvas.getContext('2d');
-  ctx.drawImage(img, 0, 0, 64, 64);
+
+  if (settings.transparentBg === false && settings.bgColor) {
+    ctx.fillStyle = settings.bgColor;
+    ctx.fillRect(0, 0, size, size);
+  }
+
+  if (settings.padToSquare) {
+    const ratio = Math.min(size / img.naturalWidth, size / img.naturalHeight);
+    const drawW = Math.round(img.naturalWidth * ratio);
+    const drawH = Math.round(img.naturalHeight * ratio);
+    const offsetX = Math.round((size - drawW) / 2);
+    const offsetY = Math.round((size - drawH) / 2);
+    ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
+  } else {
+    ctx.drawImage(img, 0, 0, size, size);
+  }
+
   const blob = await canvasToBlob(canvas, 'image/png');
   const baseName = file.name.replace(/\.[^.]+$/, '');
   return {
     blob,
     filename: `${baseName}.ico`,
     originalSize: file.size,
-    outputSize: blob.size
+    outputSize: blob.size,
+    dimensions: `${size}x${size}`
   };
 }

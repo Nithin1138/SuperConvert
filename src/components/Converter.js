@@ -121,6 +121,84 @@ export function renderConverter() {
                 </select>
               </div>
 
+              <!-- Document Conversion & Typography Settings Popover Cluster -->
+              <div class="doc-settings-cluster">
+                <button type="button" id="btn-doc-settings" class="doc-settings-btn" title="Conversion Settings: Typography, Font Size, Line Spacing, and PDF Quality">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                  </svg>
+                  <span>Doc Settings</span>
+                </button>
+
+                <!-- Document Settings Popover -->
+                <div id="doc-settings-popover" class="doc-settings-popover" style="display: none;">
+                  <div class="doc-settings-popover-header">
+                    <div class="doc-settings-popover-title">
+                      <span class="doc-settings-popover-icon">⚙️</span>
+                      <span>Layout & Export Settings</span>
+                    </div>
+                    <button type="button" id="btn-close-doc-settings" class="doc-settings-close">&times;</button>
+                  </div>
+
+                  <div class="doc-settings-popover-body">
+                    <!-- Typography Preset -->
+                    <div class="doc-setting-item">
+                      <label class="doc-setting-label">Font Family</label>
+                      <select id="doc-font-family" class="doc-setting-select">
+                        <option value="Inter, system-ui, sans-serif" selected>Inter (Modern Sans)</option>
+                        <option value="'Merriweather', Georgia, serif">Merriweather (Editorial Serif)</option>
+                        <option value="'Roboto', system-ui, sans-serif">Roboto (Clean Technical)</option>
+                        <option value="'JetBrains Mono', 'Fira Code', monospace">JetBrains Mono (Monospace)</option>
+                        <option value="system-ui, -apple-system, sans-serif">System Native</option>
+                      </select>
+                    </div>
+
+                    <!-- Font Size & Line Spacing Grid -->
+                    <div class="doc-settings-row-2">
+                      <div class="doc-setting-item">
+                        <label class="doc-setting-label">Base Font Size</label>
+                        <select id="doc-font-size" class="doc-setting-select">
+                          <option value="10pt">Compact (10pt)</option>
+                          <option value="11pt" selected>Standard (11pt)</option>
+                          <option value="12pt">Comfortable (12pt)</option>
+                          <option value="13pt">Large (13pt)</option>
+                        </select>
+                      </div>
+
+                      <div class="doc-setting-item">
+                        <label class="doc-setting-label">Line Spacing</label>
+                        <select id="doc-line-spacing" class="doc-setting-select">
+                          <option value="1.3">Tight (1.3)</option>
+                          <option value="1.5" selected>Standard (1.5)</option>
+                          <option value="1.7">Relaxed (1.7)</option>
+                          <option value="2.0">Double (2.0)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <!-- PDF DPI Quality -->
+                    <div class="doc-setting-item">
+                      <label class="doc-setting-label">PDF Vector/DPI Quality</label>
+                      <select id="doc-pdf-dpi" class="doc-setting-select">
+                        <option value="2" selected>Standard Web (150 DPI - Fast & Balanced)</option>
+                        <option value="3">High Print Quality (300 DPI - Razor Sharp)</option>
+                        <option value="1.5">Compact / Draft (96 DPI - Smallest File)</option>
+                      </select>
+                    </div>
+
+                    <!-- Page Numbers Toggle -->
+                    <div class="doc-setting-toggle-row">
+                      <span class="doc-setting-label" style="margin: 0;">Show Page Numbers</span>
+                      <label class="setting-switch">
+                        <input type="checkbox" id="doc-show-page-numbers" checked />
+                        <span class="setting-slider"></span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <!-- Watermark Controls Cluster -->
               <div class="watermark-cluster">
                 <div class="watermark-input-wrap">

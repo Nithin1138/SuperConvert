@@ -3,38 +3,69 @@
  * Browser-side transforms between CSV, JSON, Excel, XML, YAML, Base64, etc.
  */
 
-/**
- * CSV string → JSON array
- */
-export function csvToJson(csvString) {
-  const lines = csvString.trim().split('\n');
-  if (lines.length < 2) return [];
-  
-  const headers = parseCSVLine(lines[0]);
-  const result = [];
-  
-  for (let i = 1; i < lines.length; i++) {
-    if (lines[i].trim() === '') continue;
-    const values = parseCSVLine(lines[i]);
-    const row = {};
-    headers.forEach((h, idx) => {
-      let val = values[idx] || '';
-      // Auto-detect numbers
-      if (val !== '' && !isNaN(val) && val.trim() !== '') {
-        val = Number(val);
-      }
-      row[h.trim()] = val;
-    });
-    result.push(row);
-  }
-  
-  return result;
+function getDelimiterChar(delimSetting) {
+  if (!delimSetting) return ',';
+  if (delimSetting.includes('Semicolon') || delimSetting === ';') return ';';
+  if (delimSetting.includes('Tab') || delimSetting === '\t') return '\t';
+  if (delimSetting.includes('Pipe') || delimSetting === '|') return '|';
+  return ',';
 }
 
 /**
- * Parse a single CSV line (handles quoted fields)
+ * CSV string → JSON array / columnar object
  */
-function parseCSVLine(line) {
+export function csvToJson(csvString, settings = {}) {
+  const delim = getDelimiterChar(settings.delimiter);
+  const lines = csvString.trim().split(/\r?\n/);
+  if (lines.length === 0) return [];
+  
+  const hasHeader = settings.headerRow !== false;
+  const headers = hasHeader 
+    ? parseCSVLine(lines[0], delim).map(h => h.trim()) 
+    : parseCSVLine(lines[0], delim).map((_, i) => `col_${i + 1}`);
+
+  const startIdx = hasHeader ? 1 : 0;
+  const autoNum = settings.autoParseNumbers !== false;
+  const autoBool = settings.autoParseBooleans !== false;
+  const rows = [];
+
+  for (let i = startIdx; i < lines.length; i++) {
+    if (lines[i].trim() === '') continue;
+    const values = parseCSVLine(lines[i], delim);
+    const row = {};
+    headers.forEach((h, idx) => {
+      let val = values[idx] ?? '';
+      if (typeof val === 'string') {
+        const trimmed = val.trim();
+        if (autoNum && trimmed !== '' && !isNaN(trimmed) && !trimmed.startsWith('0x')) {
+          val = Number(trimmed);
+        } else if (autoBool && (trimmed.toLowerCase() === 'true' || trimmed.toLowerCase() === 'false')) {
+          val = trimmed.toLowerCase() === 'true';
+        }
+      }
+      row[h] = val;
+    });
+    rows.push(row);
+  }
+
+  if (settings.jsonStructure === 'Object of Arrays (Columnar)') {
+    const columnar = {};
+    headers.forEach(h => {
+      columnar[h] = rows.map(r => r[h]);
+    });
+    return columnar;
+  }
+  if (settings.jsonStructure === '2D Array (Rows without keys)') {
+    return [headers, ...rows.map(r => headers.map(h => r[h]))];
+  }
+  
+  return rows;
+}
+
+/**
+ * Parse a single CSV line (handles quoted fields & custom delimiters)
+ */
+function parseCSVLine(line, delimiter = ',') {
   const result = [];
   let current = '';
   let inQuotes = false;
@@ -48,7 +79,7 @@ function parseCSVLine(line) {
       } else {
         inQuotes = !inQuotes;
       }
-    } else if (ch === ',' && !inQuotes) {
+    } else if (ch === delimiter && !inQuotes) {
       result.push(current);
       current = '';
     } else {
@@ -60,28 +91,38 @@ function parseCSVLine(line) {
 }
 
 /**
- * JSON array → CSV string
+ * JSON array → CSV string with custom delimiter and quoting
  */
-export function jsonToCsv(jsonArray) {
+export function jsonToCsv(jsonArray, settings = {}) {
   if (!Array.isArray(jsonArray) || jsonArray.length === 0) return '';
   
+  const delim = getDelimiterChar(settings.delimiter);
+  const lineEnding = settings.lineEnding?.includes('CRLF') ? '\r\n' : '\n';
+  const quoteOpt = settings.quoteStrings || 'Only when necessary (Standard)';
+  const includeHeader = settings.includeHeader !== false;
+
   const headers = Object.keys(jsonArray[0]);
-  const csvLines = [headers.join(',')];
+  const csvLines = [];
   
+  if (includeHeader) {
+    csvLines.push(headers.join(delim));
+  }
+
   jsonArray.forEach(row => {
     const values = headers.map(h => {
       let val = row[h] ?? '';
       val = String(val);
-      // Quote if contains comma, newline, or quote
-      if (val.includes(',') || val.includes('\n') || val.includes('"')) {
+      const mustQuote = quoteOpt === 'Always quote all fields' || 
+        (quoteOpt !== 'Never quote' && (val.includes(delim) || val.includes('\n') || val.includes('\r') || val.includes('"')));
+      if (mustQuote) {
         val = '"' + val.replace(/"/g, '""') + '"';
       }
       return val;
     });
-    csvLines.push(values.join(','));
+    csvLines.push(values.join(delim));
   });
   
-  return csvLines.join('\n');
+  return csvLines.join(lineEnding);
 }
 
 /**
@@ -126,11 +167,25 @@ export async function excelToCsv(excelFile) {
   return XLSX.utils.sheet_to_csv(firstSheet);
 }
 
+function sortObjectKeys(obj) {
+  if (Array.isArray(obj)) return obj.map(sortObjectKeys);
+  if (obj !== null && typeof obj === 'object') {
+    return Object.keys(obj).sort().reduce((acc, key) => {
+      acc[key] = sortObjectKeys(obj[key]);
+      return acc;
+    }, {});
+  }
+  return obj;
+}
+
 /**
- * Pretty-print JSON
+ * Pretty-print JSON with optional key sorting and spacing
  */
-export function formatJson(jsonString, indent = 2) {
-  const parsed = JSON.parse(jsonString);
+export function formatJson(jsonString, indent = 2, settings = {}) {
+  let parsed = JSON.parse(jsonString);
+  if (settings.sortKeys) {
+    parsed = sortObjectKeys(parsed);
+  }
   return JSON.stringify(parsed, null, indent);
 }
 
@@ -287,9 +342,11 @@ export async function processDataTool(toolId, input, settings = {}) {
   
   switch (toolId) {
     case 'csv-to-json': {
-      const json = csvToJson(textContent);
-      const blob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' });
-      return { blob, filename: `${baseName}.json`, preview: JSON.stringify(json, null, 2), rowCount: json.length };
+      const json = csvToJson(textContent, settings);
+      const indent = settings.indentation === '4 Spaces' ? 4 : settings.indentation === 'Compact Minified (1 Line)' ? 0 : 2;
+      const pretty = JSON.stringify(json, null, indent);
+      const blob = new Blob([pretty], { type: 'application/json' });
+      return { blob, filename: `${baseName}.json`, preview: pretty, rowCount: Array.isArray(json) ? json.length : Object.keys(json).length };
     }
     
     case 'data-to-json': {
@@ -313,10 +370,10 @@ export async function processDataTool(toolId, input, settings = {}) {
         const blob = new Blob([pretty], { type: 'application/json' });
         return { blob, filename: `${baseName}.json`, preview: pretty };
       } else {
-        const json = csvToJson(textContent);
+        const json = csvToJson(textContent, settings);
         const pretty = JSON.stringify(json, null, 2);
         const blob = new Blob([pretty], { type: 'application/json' });
-        return { blob, filename: `${baseName}.json`, preview: pretty, rowCount: json.length };
+        return { blob, filename: `${baseName}.json`, preview: pretty, rowCount: Array.isArray(json) ? json.length : Object.keys(json).length };
       }
     }
 
@@ -327,42 +384,42 @@ export async function processDataTool(toolId, input, settings = {}) {
         const parsed = xmlToJson(textContent);
         jsonArray = Array.isArray(parsed) ? parsed : [parsed];
       } else if (ext === '.csv') {
-        jsonArray = csvToJson(textContent);
+        jsonArray = csvToJson(textContent, settings);
       } else {
         try {
           jsonArray = JSON.parse(textContent);
           if (!Array.isArray(jsonArray)) jsonArray = [jsonArray];
         } catch {
-          jsonArray = csvToJson(textContent);
+          jsonArray = csvToJson(textContent, settings);
         }
       }
 
       if (outputType === '.csv') {
-        const csv = jsonToCsv(jsonArray);
+        const csv = jsonToCsv(jsonArray, settings);
         const blob = new Blob([csv], { type: 'text/csv' });
         return { blob, filename: `${baseName}.csv`, preview: csv };
       } else {
-        const excelBlob = await jsonToExcel(jsonArray);
+        const excelBlob = await jsonToExcel(jsonArray, settings.sheetName || 'Data');
         return { blob: excelBlob, filename: `${baseName}.xlsx` };
       }
     }
     
     case 'json-to-csv': {
       const jsonData = JSON.parse(textContent);
-      const csv = jsonToCsv(Array.isArray(jsonData) ? jsonData : [jsonData]);
+      const csv = jsonToCsv(Array.isArray(jsonData) ? jsonData : [jsonData], settings);
       const blob = new Blob([csv], { type: 'text/csv' });
       return { blob, filename: `${baseName}.csv`, preview: csv };
     }
     
     case 'csv-to-excel': {
-      const excelBlob = await csvToExcel(textContent);
+      const excelBlob = await csvToExcel(textContent, settings.sheetName || 'Sheet1');
       return { blob: excelBlob, filename: `${baseName}.xlsx` };
     }
     
     case 'json-to-excel': {
       const jsonData = JSON.parse(textContent);
       const arr = Array.isArray(jsonData) ? jsonData : [jsonData];
-      const excelBlob = await jsonToExcel(arr);
+      const excelBlob = await jsonToExcel(arr, settings.sheetName || 'Data');
       return { blob: excelBlob, filename: `${baseName}.xlsx` };
     }
     
@@ -374,8 +431,8 @@ export async function processDataTool(toolId, input, settings = {}) {
     }
     
     case 'json-formatter': {
-      const indent = settings.indent === '4 spaces' ? 4 : settings.indent === 'Tab' ? '\t' : 2;
-      const formatted = formatJson(textContent, indent);
+      const indent = settings.indent === '4 spaces' ? 4 : settings.indent === 'Tab' ? '\t' : settings.indent === 'Compact Minified' ? 0 : 2;
+      const formatted = formatJson(textContent, indent, settings);
       const blob = new Blob([formatted], { type: 'application/json' });
       return { blob, filename: `${baseName}-formatted.json`, preview: formatted };
     }

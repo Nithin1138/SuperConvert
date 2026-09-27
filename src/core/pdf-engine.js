@@ -316,7 +316,7 @@ export async function downloadPdf(element, options = {}) {
     await new Promise(r => setTimeout(r, 60));
 
     canvas = await html2canvas(element, {
-      scale: 2,
+      scale: options.scale || 2,
       useCORS: true,
       letterRendering: true,
       backgroundColor: '#ffffff',
@@ -374,7 +374,7 @@ export async function generatePdfBlob(element, options = {}) {
     await new Promise(r => setTimeout(r, 60));
 
     canvas = await html2canvas(element, {
-      scale: 2,
+      scale: options.scale || 2,
       useCORS: true,
       letterRendering: true,
       backgroundColor: '#ffffff',

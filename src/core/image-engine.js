@@ -813,7 +813,22 @@ export async function processImageTool(toolId, file, settings = {}) {
     case 'image-watermark':
       return addWatermark(file, settings);
     default: {
-      const target = settings.targetFormat || (toolId.includes('-to-') ? `.${toolId.split('-to-')[1]}` : '.png');
+      const target = (settings.targetFormat || (toolId.includes('-to-') ? `.${toolId.split('-to-')[1]}` : '.png')).toLowerCase();
+      if (target === '.pdf') {
+        const { imageToPdf } = await import('./doc-engine.js');
+        const baseName = file.name.replace(/\.[^.]+$/, '');
+        return imageToPdf(file, `${baseName}.pdf`, settings);
+      }
+      if (target === '.docx' || target === '.doc') {
+        const { imageToDocx } = await import('./doc-engine.js');
+        const baseName = file.name.replace(/\.[^.]+$/, '');
+        return imageToDocx(file, `${baseName}.docx`, settings);
+      }
+      if (target === '.txt') {
+        const { docToTxt } = await import('./doc-engine.js');
+        const baseName = file.name.replace(/\.[^.]+$/, '');
+        return docToTxt(file, `${baseName}.txt`, settings);
+      }
       return convertImageFormat(file, target, settings);
     }
   }

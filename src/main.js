@@ -1041,6 +1041,9 @@ function renderToolSettings(tool) {
 
       // Any manual change deselects presets
       presetsBar?.querySelectorAll('.settings-preset-chip').forEach(c => c.classList.remove('active'));
+
+      // Live update right workstation pipeline
+      renderToolOutputCanvasReady();
     });
   });
 
@@ -1066,6 +1069,7 @@ function renderToolSettings(tool) {
       });
       // Clear preset selection
       presetsBar?.querySelectorAll('.settings-preset-chip').forEach(c => c.classList.remove('active'));
+      renderToolOutputCanvasReady();
     });
   }
 }
@@ -1454,19 +1458,49 @@ function renderToolOutputCanvasReady() {
   const isBatch = state.toolFiles.length > 1;
   const currentIdx = Math.min(Math.max(0, state.activeSourceFileIdx || 0), Math.max(0, state.toolFiles.length - 1));
   const file = state.toolFiles[currentIdx] || state.toolFiles[0];
+  const targetFmt = (state.toolSettings?.targetFormat || tool.outputFormat || 'Target').toUpperCase();
+
+  // Build active settings chips
+  const settingChips = [];
+  if (state.toolSettings) {
+    if (state.toolSettings.quality) settingChips.push(`Quality: ${state.toolSettings.quality}%`);
+    if (state.toolSettings.icoSize) settingChips.push(`Size: ${state.toolSettings.icoSize}`);
+    if (state.toolSettings.dpi) settingChips.push(`DPI: ${state.toolSettings.dpi}`);
+    if (state.toolSettings.font) settingChips.push(`Font: ${state.toolSettings.font}`);
+    if (state.toolSettings.scale) settingChips.push(`Scale: ${state.toolSettings.scale}x`);
+  }
+  if (settingChips.length === 0) {
+    settingChips.push('Standard Profile', 'High Fidelity');
+  }
+  const settingChipsHtml = settingChips.map(c => `<span class="pipeline-param-chip">${c}</span>`).join('');
 
   if (file) {
-    const isImage = file.type?.startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp|svg|avif)$/i.test(file.name);
+    const ext = file.name.split('.').pop() || 'file';
+    const isImage = file.type?.startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp|svg|avif|ico)$/i.test(file.name);
+    const isPdf = file.type?.includes('pdf') || /\.pdf$/i.test(file.name);
+    const isDoc = file.type?.includes('word') || /\.(docx?|rtf|odt)$/i.test(file.name);
+    const isText = file.type?.includes('text') || /\.(txt|md|markdown|json|csv|tsv|html?|css|js|tex|latex)$/i.test(file.name);
+
     let previewContent = '';
+    let srcUrl = null;
 
     if (isImage) {
-      const srcUrl = URL.createObjectURL(file);
-      previewContent = `<img src="${srcUrl}" class="output-ready-img" alt="${file.name}" />`;
+      srcUrl = URL.createObjectURL(file);
+      previewContent = `<img src="${srcUrl}" id="ready-preview-img" class="output-ready-img" alt="${file.name}" />`;
     } else {
-      previewContent = `<div class="output-ready-icon-big" style="display: flex; align-items: center; justify-content: center; width: 68px; height: 68px; color: #818CF8;">${getFileThumbIconSvg(file.name, file.type)}</div>`;
+      let iconColor = isPdf ? '#EF4444' : isDoc ? '#3B82F6' : isText ? '#10B981' : '#818CF8';
+      previewContent = `
+        <div class="output-ready-doc-card">
+          <div class="output-ready-icon-big" style="color: ${iconColor};">
+            ${getFileThumbIconSvg(file.name, file.type)}
+          </div>
+          <div class="output-ready-doc-meta">
+            <strong style="color: #FFFFFF; font-size: 0.95rem; display: block; margin-bottom: 4px;">${file.name}</strong>
+            <span>${isPdf ? 'Multi-page Vector Document' : isDoc ? 'Microsoft Word Document' : isText ? 'Plain Text Source File' : 'Structured Binary File'}</span>
+          </div>
+        </div>
+      `;
     }
-
-    const ext = file.name.split('.').pop() || 'file';
 
     let batchTabsHtml = '';
     if (isBatch) {
@@ -1474,13 +1508,14 @@ function renderToolOutputCanvasReady() {
         <div class="batch-source-tabs-wrap">
           <div class="batch-source-tabs-label">
             <span>Tap file to inspect preview (${currentIdx + 1} of ${state.toolFiles.length}):</span>
-            <span style="display: inline-flex; align-items: center; gap: 4px;">${ICONS.layers} <span>Batch Queue</span></span>
+            <span style="display: inline-flex; align-items: center; gap: 4px;">${ICONS.layers} <span>Batch Queue (${state.toolFiles.length})</span></span>
           </div>
           <div class="batch-source-tabs" id="batch-source-tabs">
             ${state.toolFiles.map((f, i) => `
               <button type="button" class="batch-source-tab ${i === currentIdx ? 'active' : ''}" data-idx="${i}">
                 <span class="tab-num">${i + 1}</span>
                 <span class="tab-name">${f.name}</span>
+                <span style="font-size: 0.68rem; opacity: 0.7;">(${formatFileSize(f.size)})</span>
               </button>
             `).join('')}
           </div>
@@ -1490,34 +1525,196 @@ function renderToolOutputCanvasReady() {
 
     emptyEl.innerHTML = `
       <div class="output-ready-hero">
+        <!-- Top Bar -->
+        <div class="output-ready-topbar">
+          <div class="output-ready-file-info">
+            <div class="output-ready-file-icon">
+              ${getFileThumbIconSvg(file.name, file.type)}
+            </div>
+            <div class="output-ready-file-texts">
+              <div class="output-ready-title" title="${file.name}">${file.name}</div>
+              <div class="output-ready-subtext">
+                <span class="ready-tag">.${ext.toUpperCase()}</span>
+                <span>•</span>
+                <span>${formatFileSize(file.size)}</span>
+                ${isBatch ? `<span>•</span> <span>File <strong>${currentIdx + 1} of ${state.toolFiles.length}</strong> in batch</span>` : ''}
+              </div>
+            </div>
+          </div>
+          <div class="output-ready-top-actions">
+            <div class="output-ready-status-pill">
+              <span class="pulse-dot"></span>
+              <span>Pre-Flight Verified</span>
+            </div>
+          </div>
+        </div>
+
         ${batchTabsHtml}
-        <div class="output-ready-preview-frame">
-          ${previewContent}
-          <div class="output-ready-badge">
-            <span class="pulse-dot"></span>
-            <span>${isBatch ? `Source ${currentIdx + 1} of ${state.toolFiles.length}` : 'Source Ready'}</span>
+
+        <!-- Dual-Pane Stage Grid -->
+        <div class="output-ready-grid">
+          <!-- Left Stage -->
+          <div class="output-ready-stage-col">
+            <div class="output-ready-preview-frame" id="ready-preview-frame">
+              ${previewContent}
+              <div class="output-ready-badge">
+                <span class="pulse-dot"></span>
+                <span>${isBatch ? `Source ${currentIdx + 1} of ${state.toolFiles.length}` : 'Source Ready'}</span>
+              </div>
+              <div class="output-ready-res-badge" id="ready-preview-res-badge" style="display: ${isImage ? 'none' : 'inline-flex'};">
+                <span>${isPdf ? 'Vector Document' : isDoc ? 'Word Document' : isText ? 'Structured Text' : 'Binary File'}</span>
+              </div>
+            </div>
+
+            <!-- Stage Controls -->
+            <div class="output-ready-stage-controls">
+              <div style="display: flex; gap: 6px;">
+                <button type="button" class="stage-ctrl-btn active" id="ctrl-fit-view" title="Fit to Preview Frame">
+                  ${ICONS.maximize} <span>Fit</span>
+                </button>
+                ${isImage ? `
+                  <button type="button" class="stage-ctrl-btn" id="ctrl-actual-zoom" title="View 100% Size">
+                    <span>100%</span>
+                  </button>
+                ` : ''}
+              </div>
+              <button type="button" class="stage-ctrl-btn" id="ctrl-toggle-bg" title="Toggle Transparency Checkerboard">
+                ${ICONS.sliders} <span>Background</span>
+              </button>
+            </div>
           </div>
-        </div>
-        <div class="output-ready-info">
-          <h3 class="output-ready-title">${file.name}</h3>
-          <div class="output-ready-meta">
-            ${isBatch ? `<span>Selected: <strong>#${currentIdx + 1}</strong></span>` : ''}
-            <span>Size: <strong>${formatFileSize(file.size)}</strong></span>
-            <span>Input: <strong>.${ext.toUpperCase()}</strong></span>
-            <span>Output: <strong>${(state.toolSettings?.targetFormat || tool.outputFormat || 'Target').toUpperCase()}</strong></span>
+
+          <!-- Right Inspector & Actions -->
+          <div class="output-ready-inspector-col">
+            <!-- 4 Telemetry Spec Tiles -->
+            <div class="ready-specs-grid">
+              <div class="ready-spec-card">
+                <span class="spec-card-label">${ICONS.layers} File Size</span>
+                <span class="spec-card-val">${formatFileSize(file.size)}</span>
+                <span class="spec-card-sub">${file.size.toLocaleString()} bytes</span>
+              </div>
+              <div class="ready-spec-card">
+                <span class="spec-card-label">${ICONS.fileText} Input Format</span>
+                <span class="spec-card-val">.${ext.toUpperCase()}</span>
+                <span class="spec-card-sub">${file.type || 'Standard File'}</span>
+              </div>
+              <div class="ready-spec-card">
+                <span class="spec-card-label">${ICONS.target} Dimensions / Scope</span>
+                <span class="spec-card-val" id="ready-val-dimensions">${isImage ? 'Measuring...' : isPdf ? 'Vector Document' : isDoc ? 'Word Document' : 'Standard Text'}</span>
+                <span class="spec-card-sub" id="ready-val-aspect">${isImage ? 'Aspect Ratio' : 'High Fidelity'}</span>
+              </div>
+              <div class="ready-spec-card">
+                <span class="spec-card-label">${ICONS.shield} Privacy & Engine</span>
+                <span class="spec-card-val">Browser RAM</span>
+                <span class="spec-card-sub">0s Server Upload</span>
+              </div>
+            </div>
+
+            <!-- Transformation Pipeline Banner -->
+            <div class="ready-pipeline-card">
+              <div class="pipeline-header">
+                <span class="pipeline-title">${ICONS.zap} Transformation Pipeline</span>
+                <button type="button" class="pipeline-edit-link" id="ready-jump-settings-btn">Adjust in Step 2 →</button>
+              </div>
+              <div class="pipeline-flow-row">
+                <div class="pipeline-node">
+                  <span class="pipeline-node-chip source">.${ext.toUpperCase()}</span>
+                </div>
+                <div class="pipeline-connector">
+                  <span class="pipeline-arrow-icon">⚡ ➔</span>
+                </div>
+                <div class="pipeline-node">
+                  <span class="pipeline-node-chip target">${targetFmt}</span>
+                </div>
+              </div>
+              <div class="pipeline-params-row">
+                <div class="pipeline-params-chips">
+                  ${settingChipsHtml}
+                </div>
+              </div>
+            </div>
+
+            <!-- Conversion Action Area -->
+            <div class="ready-action-area">
+              <button type="button" id="tool-canvas-convert-btn" class="output-canvas-convert-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg>
+                <span>${isBatch ? `Convert All ${state.toolFiles.length} Files & Download ZIP` : `Convert to ${targetFmt} & Download Output`}</span>
+              </button>
+              <div class="ready-secondary-row">
+                <button type="button" id="ready-change-format-btn" class="ready-format-switch-btn">
+                  ${ICONS.sparkles}
+                  <span>Change Target Format</span>
+                </button>
+                <span class="ready-privacy-footnote">
+                  ${ICONS.lock}
+                  <span>100% Private in Browser RAM</span>
+                </span>
+              </div>
+            </div>
           </div>
-        </div>
-        <div class="output-ready-cta-wrap">
-          <button type="button" id="tool-canvas-convert-btn" class="btn btn-primary btn-lg output-canvas-convert-btn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-            </svg>
-            <span>${isBatch ? `Convert All ${state.toolFiles.length} Files & Download ZIP` : 'Convert & Download Output'}</span>
-          </button>
-          <p class="output-ready-hint">${isBatch ? `All ${state.toolFiles.length} files will be converted locally with your settings and bundled into a ZIP file.` : 'Click above or adjust conversion parameters on the left panel anytime.'}</p>
         </div>
       </div>
     `;
+
+    // Asynchronously measure natural dimensions for images
+    if (isImage && srcUrl) {
+      const probe = new Image();
+      probe.onload = () => {
+        const w = probe.naturalWidth;
+        const h = probe.naturalHeight;
+        const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
+        const div = gcd(w, h);
+        let ratio = `${Math.round(w / div)}:${Math.round(h / div)}`;
+        if (Math.abs(w / h - 1) < 0.03) ratio = '1:1 Square';
+        else if (Math.abs(w / h - 16 / 9) < 0.03) ratio = '16:9 Landscape';
+        else if (Math.abs(w / h - 4 / 3) < 0.03) ratio = '4:3 Standard';
+        else if (Math.abs(w / h - 9 / 16) < 0.03) ratio = '9:16 Portrait';
+        else if (Math.abs(w / h - 3 / 2) < 0.03) ratio = '3:2 Photo';
+
+        const dimEl = document.getElementById('ready-val-dimensions');
+        if (dimEl) dimEl.textContent = `${w} × ${h} px`;
+        const aspectEl = document.getElementById('ready-val-aspect');
+        if (aspectEl) aspectEl.textContent = ratio;
+        const resBadge = document.getElementById('ready-preview-res-badge');
+        if (resBadge) {
+          resBadge.style.display = 'inline-flex';
+          resBadge.innerHTML = `<span>${w} × ${h} px</span> <span class="badge-dot-sep">•</span> <span>${ratio}</span>`;
+        }
+      };
+      probe.src = srcUrl;
+    }
+
+    // Attach stage control listeners
+    const previewFrame = document.getElementById('ready-preview-frame');
+    const previewImg = document.getElementById('ready-preview-img');
+    const fitBtn = document.getElementById('ctrl-fit-view');
+    const actualBtn = document.getElementById('ctrl-actual-zoom');
+    const toggleBgBtn = document.getElementById('ctrl-toggle-bg');
+
+    if (fitBtn && previewImg) {
+      fitBtn.addEventListener('click', () => {
+        previewImg.classList.remove('zoom-100');
+        fitBtn.classList.add('active');
+        if (actualBtn) actualBtn.classList.remove('active');
+      });
+    }
+
+    if (actualBtn && previewImg) {
+      actualBtn.addEventListener('click', () => {
+        previewImg.classList.add('zoom-100');
+        actualBtn.classList.add('active');
+        if (fitBtn) fitBtn.classList.remove('active');
+      });
+    }
+
+    if (toggleBgBtn && previewFrame) {
+      toggleBgBtn.addEventListener('click', () => {
+        previewFrame.classList.toggle('solid-bg');
+        toggleBgBtn.classList.toggle('active');
+      });
+    }
 
     // Wire up batch tabs clicks
     if (isBatch) {
@@ -1536,6 +1733,129 @@ function renderToolOutputCanvasReady() {
         });
       }
     }
+
+    // Jump to settings link
+    const jumpBtn = document.getElementById('ready-jump-settings-btn');
+    if (jumpBtn) {
+      jumpBtn.addEventListener('click', () => {
+        const settingsBlock = document.getElementById('tool-settings-block');
+        if (settingsBlock) {
+          settingsBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          settingsBlock.style.transition = 'box-shadow 0.3s ease, border-color 0.3s ease';
+          settingsBlock.style.borderColor = 'rgba(99, 102, 241, 0.8)';
+          settingsBlock.style.boxShadow = '0 0 24px rgba(99, 102, 241, 0.35)';
+          setTimeout(() => {
+            settingsBlock.style.borderColor = '';
+            settingsBlock.style.boxShadow = '';
+          }, 1400);
+        }
+      });
+    }
+
+    // Change format button
+    const changeFmtBtn = document.getElementById('ready-change-format-btn');
+    if (changeFmtBtn) {
+      changeFmtBtn.addEventListener('click', () => {
+        playClickSound();
+        openFormatModal();
+      });
+    }
+
+    // Primary conversion button
+    const canvasBtn = document.getElementById('tool-canvas-convert-btn');
+    if (canvasBtn) {
+      canvasBtn.addEventListener('click', () => {
+        playClickSound();
+        animateButtonPress(canvasBtn);
+        executeToolConversion();
+      });
+    }
+  } else if (state.toolTextInput?.trim()) {
+    // Text input workstation
+    const textSnippet = state.toolTextInput.trim().slice(0, 400);
+    const wordCount = state.toolTextInput.trim().split(/\s+/).length;
+    const charCount = state.toolTextInput.length;
+
+    emptyEl.innerHTML = `
+      <div class="output-ready-hero">
+        <div class="output-ready-topbar">
+          <div class="output-ready-file-info">
+            <div class="output-ready-file-icon">
+              ${ICONS.fileText}
+            </div>
+            <div class="output-ready-file-texts">
+              <div class="output-ready-title">Pasted Raw Text Content</div>
+              <div class="output-ready-subtext">
+                <span class="ready-tag">TEXT DATA</span>
+                <span>•</span>
+                <span>${wordCount} words</span>
+                <span>•</span>
+                <span>${charCount} chars</span>
+              </div>
+            </div>
+          </div>
+          <div class="output-ready-top-actions">
+            <div class="output-ready-status-pill">
+              <span class="pulse-dot"></span>
+              <span>Ready to Convert</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="output-ready-grid">
+          <div class="output-ready-stage-col">
+            <div class="output-ready-preview-frame solid-bg" style="align-items: flex-start; justify-content: flex-start; padding: 20px; overflow-y: auto;">
+              <pre style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: #CBD5E1; white-space: pre-wrap; margin: 0; line-height: 1.6;">${textSnippet}${charCount > 400 ? '...' : ''}</pre>
+            </div>
+          </div>
+
+          <div class="output-ready-inspector-col">
+            <div class="ready-specs-grid">
+              <div class="ready-spec-card">
+                <span class="spec-card-label">${ICONS.fileText} Word Count</span>
+                <span class="spec-card-val">${wordCount}</span>
+                <span class="spec-card-sub">${charCount} characters</span>
+              </div>
+              <div class="ready-spec-card">
+                <span class="spec-card-label">${ICONS.target} Target Format</span>
+                <span class="spec-card-val">${targetFmt}</span>
+                <span class="spec-card-sub">Active Selection</span>
+              </div>
+              <div class="ready-spec-card">
+                <span class="spec-card-label">${ICONS.zap} Layout Structure</span>
+                <span class="spec-card-val">Auto Headings</span>
+                <span class="spec-card-sub">Headings, Tables, Lists</span>
+              </div>
+              <div class="ready-spec-card">
+                <span class="spec-card-label">${ICONS.shield} Engine</span>
+                <span class="spec-card-val">Local RAM</span>
+                <span class="spec-card-sub">Client Execution</span>
+              </div>
+            </div>
+
+            <div class="ready-pipeline-card">
+              <div class="pipeline-header">
+                <span class="pipeline-title">${ICONS.zap} Text Transformation</span>
+              </div>
+              <div class="pipeline-flow-row">
+                <div class="pipeline-node"><span class="pipeline-node-chip source">RAW TEXT</span></div>
+                <div class="pipeline-connector"><span class="pipeline-arrow-icon">⚡ ➔</span></div>
+                <div class="pipeline-node"><span class="pipeline-node-chip target">${targetFmt}</span></div>
+              </div>
+            </div>
+
+            <div class="ready-action-area">
+              <button type="button" id="tool-canvas-convert-btn" class="output-canvas-convert-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg>
+                <span>Convert to ${targetFmt} & Download Output</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
 
     const canvasBtn = document.getElementById('tool-canvas-convert-btn');
     if (canvasBtn) {
@@ -1658,28 +1978,37 @@ async function executeToolConversion() {
           processingText.textContent = `Converting file ${i + 1} of ${total}: ${file.name}...`;
         }
 
+        const chosenTarget = (state.toolSettings?.targetFormat || tool.outputFormat || '').toLowerCase();
         let res;
-        switch (tool.engine) {
-          case 'image':
-            res = await processImageTool(tool.id, file, state.toolSettings);
-            break;
-          case 'doc':
-            res = await processDocTool(tool.id, file, state.toolSettings);
-            break;
-          case 'media':
-            res = await processAudioVideoTool(tool.id, file, state.toolSettings);
-            break;
-          case '3d':
-            res = await convert3DModel(file, state.toolSettings?.targetFormat || tool.outputFormat, state.toolSettings);
-            break;
-          case 'data':
-            res = await processDataTool(tool.id, file, state.toolSettings);
-            break;
-          case 'latex':
-            res = await processLatexTool(tool.id, file, state.toolSettings);
-            break;
-          default:
-            throw new Error(`Unknown engine: ${tool.engine}`);
+        if ((chosenTarget.includes('docx') || chosenTarget.includes('word')) && tool.engine !== 'doc' && tool.engine !== 'latex') {
+          res = await processDocTool('doc-to-docx', file, state.toolSettings);
+        } else if ((chosenTarget.includes('txt') || chosenTarget.includes('text')) && tool.engine !== 'doc' && tool.engine !== 'data') {
+          res = await processDocTool('doc-to-txt', file, state.toolSettings);
+        } else if (chosenTarget.includes('pdf') && tool.engine === 'image') {
+          res = await processDocTool('img-to-pdf', file, state.toolSettings);
+        } else {
+          switch (tool.engine) {
+            case 'image':
+              res = await processImageTool(tool.id, file, state.toolSettings);
+              break;
+            case 'doc':
+              res = await processDocTool(tool.id, file, state.toolSettings);
+              break;
+            case 'media':
+              res = await processAudioVideoTool(tool.id, file, state.toolSettings);
+              break;
+            case '3d':
+              res = await convert3DModel(file, state.toolSettings?.targetFormat || tool.outputFormat, state.toolSettings);
+              break;
+            case 'data':
+              res = await processDataTool(tool.id, file, state.toolSettings);
+              break;
+            case 'latex':
+              res = await processLatexTool(tool.id, file, state.toolSettings);
+              break;
+            default:
+              throw new Error(`Unknown engine: ${tool.engine}`);
+          }
         }
         res.sourceFile = file;
         results.push(res);
@@ -1725,28 +2054,37 @@ async function executeToolConversion() {
       if (progressBar) progressBar.style.width = '60%';
       if (processingText) processingText.textContent = 'Processing file with active settings...';
 
+      const chosenTarget = (state.toolSettings?.targetFormat || tool.outputFormat || '').toLowerCase();
       let result;
-      switch (tool.engine) {
-        case 'image':
-          result = await processImageTool(tool.id, input, state.toolSettings);
-          break;
-        case 'doc':
-          result = await processDocTool(tool.id, input, state.toolSettings);
-          break;
-        case 'media':
-          result = await processAudioVideoTool(tool.id, input, state.toolSettings);
-          break;
-        case '3d':
-          result = await convert3DModel(input, state.toolSettings?.targetFormat || tool.outputFormat, state.toolSettings);
-          break;
-        case 'data':
-          result = await processDataTool(tool.id, input, state.toolSettings);
-          break;
-        case 'latex':
-          result = await processLatexTool(tool.id, input, state.toolSettings);
-          break;
-        default:
-          throw new Error(`Unknown engine: ${tool.engine}`);
+      if ((chosenTarget.includes('docx') || chosenTarget.includes('word')) && tool.engine !== 'doc' && tool.engine !== 'latex') {
+        result = await processDocTool('doc-to-docx', input, state.toolSettings);
+      } else if ((chosenTarget.includes('txt') || chosenTarget.includes('text')) && tool.engine !== 'doc' && tool.engine !== 'data') {
+        result = await processDocTool('doc-to-txt', input, state.toolSettings);
+      } else if (chosenTarget.includes('pdf') && tool.engine === 'image') {
+        result = await processDocTool('img-to-pdf', input, state.toolSettings);
+      } else {
+        switch (tool.engine) {
+          case 'image':
+            result = await processImageTool(tool.id, input, state.toolSettings);
+            break;
+          case 'doc':
+            result = await processDocTool(tool.id, input, state.toolSettings);
+            break;
+          case 'media':
+            result = await processAudioVideoTool(tool.id, input, state.toolSettings);
+            break;
+          case '3d':
+            result = await convert3DModel(input, state.toolSettings?.targetFormat || tool.outputFormat, state.toolSettings);
+            break;
+          case 'data':
+            result = await processDataTool(tool.id, input, state.toolSettings);
+            break;
+          case 'latex':
+            result = await processLatexTool(tool.id, input, state.toolSettings);
+            break;
+          default:
+            throw new Error(`Unknown engine: ${tool.engine}`);
+        }
       }
 
       if (progressBar) progressBar.style.width = '100%';

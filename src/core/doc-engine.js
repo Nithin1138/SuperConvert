@@ -224,104 +224,349 @@ export async function textToPdf(plainText, filename = 'document.pdf', options = 
 }
 
 /**
- * Markdown → DOCX using the docx npm package
+ * High-Fidelity DOM → DOCX converter using docx npm package
+ * Recursively parses HTML DOM elements into native Microsoft Word AST nodes:
+ * Headings (H1-H6), Tables with headers/borders/shading, Bullet and Numbered Lists,
+ * Blockquotes, Code blocks, and styled inline runs (bold, italic, strike, underline, code, link).
  */
-export async function markdownToDocx(mdString, filename = 'document.docx') {
-  const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle } = await import('docx');
-  
-  const textContent = typeof mdString === 'string' ? mdString : await mdString.text();
-  const lines = textContent.split('\n');
-  const children = [];
-  let inCodeBlock = false;
-  let codeBuffer = [];
-  
-  for (const line of lines) {
-    if (line.trim().startsWith('```')) {
-      if (inCodeBlock) {
-        children.push(new Paragraph({
-          children: [new TextRun({ text: codeBuffer.join('\n'), font: 'Courier New', size: 18, color: '2D3748' })],
-          spacing: { before: 100, after: 100 },
-          border: {
-            top: { style: BorderStyle.SINGLE, size: 1, color: 'E2E8F0' },
-            bottom: { style: BorderStyle.SINGLE, size: 1, color: 'E2E8F0' },
-            left: { style: BorderStyle.SINGLE, size: 1, color: 'E2E8F0' },
-            right: { style: BorderStyle.SINGLE, size: 1, color: 'E2E8F0' }
-          },
-          shading: { fill: 'F7FAFC' }
-        }));
-        codeBuffer = [];
-        inCodeBlock = false;
-      } else {
-        inCodeBlock = true;
-      }
-      continue;
-    }
-    
-    if (inCodeBlock) {
-      codeBuffer.push(line);
-      continue;
-    }
-    
-    if (line.startsWith('# ')) {
-      children.push(new Paragraph({
-        children: [new TextRun({ text: line.slice(2), bold: true, size: 32, color: '1A202C' })],
-        heading: HeadingLevel.HEADING_1,
-        spacing: { before: 240, after: 120 }
-      }));
-    } else if (line.startsWith('## ')) {
-      children.push(new Paragraph({
-        children: [new TextRun({ text: line.slice(3), bold: true, size: 28, color: '2D3748' })],
-        heading: HeadingLevel.HEADING_2,
-        spacing: { before: 200, after: 100 }
-      }));
-    } else if (line.startsWith('### ')) {
-      children.push(new Paragraph({
-        children: [new TextRun({ text: line.slice(4), bold: true, size: 24, color: '4A5568' })],
-        heading: HeadingLevel.HEADING_3,
-        spacing: { before: 160, after: 80 }
-      }));
-    } else if (/^[-*_]{3,}\s*$/.test(line.trim())) {
-      children.push(new Paragraph({
-        children: [],
-        border: { bottom: { style: BorderStyle.SINGLE, size: 1, color: 'CBD5E0' } },
-        spacing: { before: 200, after: 200 }
-      }));
-    } else if (line.startsWith('> ')) {
-      children.push(new Paragraph({
-        children: [new TextRun({ text: line.slice(2), italics: true, color: '718096', size: 22 })],
-        indent: { left: 720 },
-        border: { left: { style: BorderStyle.SINGLE, size: 6, color: '4D43FE' } },
-        spacing: { before: 80, after: 80 }
-      }));
-    } else if (/^\s*[-*+]\s/.test(line)) {
-      const text = line.replace(/^\s*[-*+]\s/, '');
-      children.push(new Paragraph({
-        children: parseInlineFormatting(text, TextRun),
-        bullet: { level: 0 },
-        spacing: { before: 40, after: 40 }
-      }));
-    } else if (/^\s*\d+\.\s/.test(line)) {
-      const text = line.replace(/^\s*\d+\.\s/, '');
-      children.push(new Paragraph({
-        children: parseInlineFormatting(text, TextRun),
-        numbering: { reference: 'default-numbering', level: 0 },
-        spacing: { before: 40, after: 40 }
-      }));
-    } else if (line.trim() === '') {
-      children.push(new Paragraph({ children: [], spacing: { before: 80, after: 80 } }));
+export async function domToDocx(htmlOrElement, filename = 'document.docx', options = {}) {
+  const {
+    Document,
+    Packer,
+    Paragraph,
+    TextRun,
+    HeadingLevel,
+    AlignmentType,
+    BorderStyle,
+    Table,
+    TableRow,
+    TableCell,
+    WidthType,
+    UnderlineType
+  } = await import('docx');
+
+  let container;
+  if (typeof htmlOrElement === 'string') {
+    if (typeof DOMParser !== 'undefined') {
+      const parser = new DOMParser();
+      const docParsed = parser.parseFromString(htmlOrElement, 'text/html');
+      container = docParsed.body;
     } else {
-      children.push(new Paragraph({
-        children: parseInlineFormatting(line, TextRun),
-        spacing: { before: 60, after: 60 }
-      }));
+      container = document.createElement('div');
+      container.innerHTML = htmlOrElement;
+    }
+  } else if (typeof HTMLElement !== 'undefined' && htmlOrElement instanceof HTMLElement) {
+    container = htmlOrElement;
+  } else {
+    container = document.createElement('div');
+    container.textContent = String(htmlOrElement || '');
+  }
+
+  const baseFont = options.font || 'Calibri';
+  const children = [];
+
+  // Helper to extract styled TextRuns from inline elements recursively
+  function extractRuns(node, style = {}) {
+    const runs = [];
+    if (!node) return runs;
+
+    const isText = node.nodeType === 3 || (typeof Node !== 'undefined' && node.nodeType === Node.TEXT_NODE);
+    if (isText) {
+      const text = node.textContent;
+      if (text) {
+        runs.push(new TextRun({
+          text,
+          font: baseFont,
+          size: style.size || 22,
+          ...style
+        }));
+      }
+      return runs;
+    }
+
+    const isElement = node.nodeType === 1 || (typeof Node !== 'undefined' && node.nodeType === Node.ELEMENT_NODE);
+    if (isElement) {
+      const tag = node.tagName.toLowerCase();
+      let nextStyle = { ...style };
+
+      if (tag === 'b' || tag === 'strong') {
+        nextStyle.bold = true;
+      } else if (tag === 'i' || tag === 'em') {
+        nextStyle.italics = true;
+      } else if (tag === 'u') {
+        nextStyle.underline = { type: UnderlineType.SINGLE };
+      } else if (tag === 's' || tag === 'del' || tag === 'strike') {
+        nextStyle.strike = true;
+      } else if (tag === 'code') {
+        nextStyle.font = 'Courier New';
+        nextStyle.size = 20;
+        nextStyle.color = '4338CA';
+      } else if (tag === 'a') {
+        nextStyle.color = '2563EB';
+        nextStyle.underline = { type: UnderlineType.SINGLE };
+      } else if (tag === 'mark') {
+        nextStyle.highlight = 'yellow';
+      } else if (tag === 'br') {
+        runs.push(new TextRun({ break: 1 }));
+        return runs;
+      }
+
+      for (const child of node.childNodes) {
+        runs.push(...extractRuns(child, nextStyle));
+      }
+    }
+
+    return runs;
+  }
+
+  // Walk block elements and convert to Paragraph, Table, List, etc.
+  function processBlockNode(node, listLevel = 0, listType = null) {
+    if (!node) return;
+
+    if (node.nodeType === 3 || (typeof Node !== 'undefined' && node.nodeType === Node.TEXT_NODE)) {
+      const txt = node.textContent.trim();
+      if (txt) {
+        children.push(new Paragraph({
+          children: [new TextRun({ text: txt, font: baseFont, size: 22 })],
+          spacing: { before: 60, after: 60 }
+        }));
+      }
+      return;
+    }
+
+    if (node.nodeType !== 1 && !(typeof Node !== 'undefined' && node.nodeType === Node.ELEMENT_NODE)) return;
+
+    const tag = node.tagName.toLowerCase();
+
+    switch (tag) {
+      case 'h1': {
+        const runs = extractRuns(node, { bold: true, color: '0F172A', size: 36 });
+        children.push(new Paragraph({
+          children: runs.length ? runs : [new TextRun({ text: node.textContent, bold: true, size: 36 })],
+          heading: HeadingLevel.HEADING_1,
+          spacing: { before: 320, after: 120 }
+        }));
+        break;
+      }
+      case 'h2': {
+        const runs = extractRuns(node, { bold: true, color: '1E293B', size: 28 });
+        children.push(new Paragraph({
+          children: runs.length ? runs : [new TextRun({ text: node.textContent, bold: true, size: 28 })],
+          heading: HeadingLevel.HEADING_2,
+          spacing: { before: 260, after: 100 }
+        }));
+        break;
+      }
+      case 'h3': {
+        const runs = extractRuns(node, { bold: true, color: '334155', size: 24 });
+        children.push(new Paragraph({
+          children: runs.length ? runs : [new TextRun({ text: node.textContent, bold: true, size: 24 })],
+          heading: HeadingLevel.HEADING_3,
+          spacing: { before: 200, after: 80 }
+        }));
+        break;
+      }
+      case 'h4': {
+        const runs = extractRuns(node, { bold: true, color: '475569', size: 22 });
+        children.push(new Paragraph({
+          children: runs.length ? runs : [new TextRun({ text: node.textContent, bold: true, size: 22 })],
+          heading: HeadingLevel.HEADING_4,
+          spacing: { before: 160, after: 60 }
+        }));
+        break;
+      }
+      case 'h5': {
+        const runs = extractRuns(node, { bold: true, color: '64748B', size: 20 });
+        children.push(new Paragraph({
+          children: runs.length ? runs : [new TextRun({ text: node.textContent, bold: true, size: 20 })],
+          heading: HeadingLevel.HEADING_5,
+          spacing: { before: 120, after: 50 }
+        }));
+        break;
+      }
+      case 'h6': {
+        const runs = extractRuns(node, { bold: true, color: '64748B', size: 18 });
+        children.push(new Paragraph({
+          children: runs.length ? runs : [new TextRun({ text: node.textContent, bold: true, size: 18 })],
+          heading: HeadingLevel.HEADING_6,
+          spacing: { before: 100, after: 40 }
+        }));
+        break;
+      }
+      case 'p': {
+        const runs = extractRuns(node);
+        if (runs.length > 0) {
+          children.push(new Paragraph({
+            children: runs,
+            spacing: { before: 60, after: 80, line: 320 }
+          }));
+        }
+        break;
+      }
+      case 'ul': {
+        for (const child of node.children) {
+          if (child.tagName.toLowerCase() === 'li') {
+            processBlockNode(child, listLevel, 'ul');
+          }
+        }
+        break;
+      }
+      case 'ol': {
+        for (const child of node.children) {
+          if (child.tagName.toLowerCase() === 'li') {
+            processBlockNode(child, listLevel, 'ol');
+          }
+        }
+        break;
+      }
+      case 'li': {
+        const runs = [];
+        const subLists = [];
+        for (const child of node.childNodes) {
+          if (child.nodeType === Node.ELEMENT_NODE && ['ul', 'ol'].includes(child.tagName.toLowerCase())) {
+            subLists.push(child);
+          } else {
+            runs.push(...extractRuns(child));
+          }
+        }
+
+        if (runs.length > 0) {
+          if (listType === 'ol') {
+            children.push(new Paragraph({
+              children: runs,
+              numbering: { reference: 'default-numbering', level: Math.min(listLevel, 2) },
+              spacing: { before: 40, after: 40 }
+            }));
+          } else {
+            children.push(new Paragraph({
+              children: runs,
+              bullet: { level: Math.min(listLevel, 2) },
+              spacing: { before: 40, after: 40 }
+            }));
+          }
+        }
+
+        for (const sub of subLists) {
+          processBlockNode(sub, listLevel + 1);
+        }
+        break;
+      }
+      case 'blockquote': {
+        const runs = extractRuns(node, { italics: true, color: '475569' });
+        children.push(new Paragraph({
+          children: runs.length ? runs : [new TextRun({ text: node.textContent, italics: true, color: '475569' })],
+          indent: { left: 720 },
+          border: {
+            left: { style: BorderStyle.SINGLE, size: 24, color: '4F46E5' }
+          },
+          shading: { fill: 'F8FAFC' },
+          spacing: { before: 120, after: 120 }
+        }));
+        break;
+      }
+      case 'pre': {
+        const codeEl = node.querySelector('code');
+        const text = (codeEl || node).textContent;
+        const codeLines = text.split('\n');
+        for (const cLine of codeLines) {
+          children.push(new Paragraph({
+            children: [new TextRun({ text: cLine || ' ', font: 'Courier New', size: 19, color: '1E293B' })],
+            shading: { fill: 'F8FAFC' },
+            border: {
+              left: { style: BorderStyle.SINGLE, size: 4, color: 'E2E8F0' },
+              right: { style: BorderStyle.SINGLE, size: 4, color: 'E2E8F0' }
+            },
+            spacing: { before: 20, after: 20 }
+          }));
+        }
+        break;
+      }
+      case 'hr': {
+        children.push(new Paragraph({
+          children: [],
+          border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: 'CBD5E1' } },
+          spacing: { before: 160, after: 160 }
+        }));
+        break;
+      }
+      case 'table': {
+        const tableRows = [];
+        const trElements = Array.from(node.querySelectorAll('tr'));
+
+        for (const tr of trElements) {
+          const cells = [];
+          const thOrTds = Array.from(tr.querySelectorAll('th, td'));
+          const isHeader = tr.parentElement?.tagName.toLowerCase() === 'thead' || tr.querySelector('th') !== null;
+
+          for (const cell of thOrTds) {
+            const isTh = cell.tagName.toLowerCase() === 'th' || isHeader;
+            const runs = extractRuns(cell, isTh ? { bold: true, color: '0F172A', size: 21 } : { size: 21, color: '334155' });
+
+            cells.push(new TableCell({
+              children: [new Paragraph({ children: runs.length ? runs : [new TextRun({ text: cell.textContent || ' ' })] })],
+              shading: isTh ? { fill: 'F1F5F9' } : { fill: 'FFFFFF' },
+              margins: {
+                top: isTh ? 120 : 100,
+                bottom: isTh ? 120 : 100,
+                left: 140,
+                right: 140
+              }
+            }));
+          }
+
+          if (cells.length > 0) {
+            tableRows.push(new TableRow({
+              children: cells,
+              tableHeader: isHeader
+            }));
+          }
+        }
+
+        if (tableRows.length > 0) {
+          children.push(new Table({
+            rows: tableRows,
+            width: { size: 100, type: WidthType.PERCENTAGE }
+          }));
+          children.push(new Paragraph({ children: [], spacing: { before: 80, after: 80 } }));
+        }
+        break;
+      }
+      default: {
+        for (const child of node.childNodes) {
+          const isElem = child.nodeType === 1 || (typeof Node !== 'undefined' && child.nodeType === Node.ELEMENT_NODE);
+          const isTxt = child.nodeType === 3 || (typeof Node !== 'undefined' && child.nodeType === Node.TEXT_NODE);
+          if (isElem) {
+            processBlockNode(child, listLevel, listType);
+          } else if (isTxt && child.textContent.trim()) {
+            const runs = extractRuns(child);
+            if (runs.length > 0) {
+              children.push(new Paragraph({ children: runs, spacing: { before: 60, after: 60 } }));
+            }
+          }
+        }
+      }
     }
   }
-  
+
+  for (const child of container.childNodes) {
+    processBlockNode(child, 0);
+  }
+
+  if (children.length === 0) {
+    children.push(new Paragraph({
+      children: [new TextRun({ text: container.textContent || 'Document', size: 22 })]
+    }));
+  }
+
   const doc = new Document({
     numbering: {
       config: [{
         reference: 'default-numbering',
-        levels: [{ level: 0, format: 'decimal', text: '%1.', alignment: AlignmentType.LEFT }]
+        levels: [
+          { level: 0, format: 'decimal', text: '%1.', alignment: AlignmentType.LEFT },
+          { level: 1, format: 'lowerLetter', text: '%2)', alignment: AlignmentType.LEFT },
+          { level: 2, format: 'lowerRoman', text: '%3.', alignment: AlignmentType.LEFT }
+        ]
       }]
     },
     sections: [{
@@ -333,55 +578,156 @@ export async function markdownToDocx(mdString, filename = 'document.docx') {
       children
     }]
   });
-  
+
   const blob = await Packer.toBlob(doc);
-  return { blob, filename: filename.endsWith('.docx') ? filename : `${filename}.docx` };
+  return {
+    blob,
+    filename: filename.endsWith('.docx') ? filename : `${filename}.docx`
+  };
 }
 
 /**
- * Parse inline Markdown formatting to TextRun objects
+ * Markdown → DOCX with complete structure preservation (headings, tables, lists, quotes, code, styles)
  */
-function parseInlineFormatting(text, TextRun) {
-  const runs = [];
-  let remaining = text;
-  
-  const segments = [];
-  let lastIndex = 0;
-  const combined = /(\*\*(.+?)\*\*|\*(.+?)\*|`(.+?)`|~~(.+?)~~)/g;
-  let match;
-  
-  while ((match = combined.exec(remaining)) !== null) {
-    if (match.index > lastIndex) {
-      segments.push({ text: remaining.slice(lastIndex, match.index), style: {} });
+export async function markdownToDocx(mdString, filename = 'document.docx', options = {}) {
+  const textContent = typeof mdString === 'string' ? mdString : await mdString.text();
+  const { marked } = await import('marked');
+  const html = await marked.parse(textContent, { gfm: true, breaks: true });
+  return domToDocx(html, filename, options);
+}
+
+/**
+ * HTML → DOCX preserving all DOM structure (tables, headings, lists, formatting)
+ */
+export async function htmlToDocx(htmlString, filename = 'document.docx', options = {}) {
+  const htmlContent = typeof htmlString === 'string' ? htmlString : await htmlString.text();
+  return domToDocx(htmlContent, filename, options);
+}
+
+/**
+ * Plain Text → Structured DOCX
+ * Automatically detects outline headings, lists, tables via textToMarkdown and converts to Word
+ */
+export async function plainTextToDocx(plainText, filename = 'document.docx', options = {}) {
+  const textStr = typeof plainText === 'string' ? plainText : await plainText.text();
+  const mdRes = await textToMarkdown(textStr, 'document.md');
+  const mdContent = typeof mdRes === 'object' && mdRes.text ? mdRes.text : String(mdRes);
+  return markdownToDocx(mdContent, filename, options);
+}
+
+/**
+ * Image (.png, .jpg, .webp, etc.) → Word (.docx) Document with embedded image
+ */
+export async function imageToDocx(imageFile, filename = 'document.docx', options = {}) {
+  const { Document, Packer, Paragraph, TextRun, ImageRun, HeadingLevel, AlignmentType } = await import('docx');
+
+  let arrayBuffer;
+  if (imageFile instanceof ArrayBuffer) {
+    arrayBuffer = imageFile;
+  } else if (imageFile && typeof imageFile.arrayBuffer === 'function') {
+    arrayBuffer = await imageFile.arrayBuffer();
+  } else {
+    throw new Error('Please upload a valid image file');
+  }
+
+  const fileNameStr = (typeof imageFile === 'object' && imageFile?.name) ? imageFile.name : 'Image Document';
+  const cleanTitle = fileNameStr.replace(/\.[^.]+$/, '');
+
+  const doc = new Document({
+    sections: [{
+      properties: {
+        page: {
+          margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 }
+        }
+      },
+      children: [
+        new Paragraph({
+          children: [new TextRun({ text: cleanTitle, bold: true, size: 32, color: '0F172A' })],
+          heading: HeadingLevel.HEADING_1,
+          spacing: { before: 100, after: 140 }
+        }),
+        new Paragraph({
+          children: [
+            new ImageRun({
+              data: arrayBuffer,
+              transformation: { width: 520, height: 380 }
+            })
+          ],
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 120, after: 120 }
+        }),
+        new Paragraph({
+          children: [new TextRun({ text: `Source file: ${fileNameStr}`, italics: true, size: 18, color: '64748B' })],
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 60, after: 60 }
+        })
+      ]
+    }]
+  });
+
+  const blob = await Packer.toBlob(doc);
+  return {
+    blob,
+    filename: filename.endsWith('.docx') ? filename : `${filename}.docx`
+  };
+}
+
+/**
+ * Unified Document to Text Extraction (.pdf, .docx, .html, .md, .txt)
+ * Safely extracts clean text without throwing "Invalid PDF" errors on Word or markup files.
+ */
+export async function docToTxt(input, filename = 'document.txt', settings = {}) {
+  const isFile = typeof input === 'object' && input !== null && 'name' in input;
+  const fileName = isFile ? input.name : 'document.txt';
+  const ext = fileName.includes('.') ? fileName.slice(fileName.lastIndexOf('.')).toLowerCase() : '.txt';
+
+  let cleanText = '';
+
+  if (ext === '.pdf' || (isFile && input.type?.includes('pdf'))) {
+    return pdfToText(input, filename);
+  } else if (ext === '.docx' || ext === '.doc' || (isFile && input.type?.includes('wordprocessingml'))) {
+    const mammoth = await import('mammoth');
+    let arrayBuffer;
+    if (input instanceof ArrayBuffer) {
+      arrayBuffer = input;
+    } else if (input && typeof input.arrayBuffer === 'function') {
+      arrayBuffer = await input.arrayBuffer();
+    } else {
+      throw new Error('Please upload a valid Word (.docx) document file');
     }
-    
-    if (match[2]) segments.push({ text: match[2], style: { bold: true } });
-    else if (match[3]) segments.push({ text: match[3], style: { italics: true } });
-    else if (match[4]) segments.push({ text: match[4], style: { font: 'Courier New', size: 20, color: '4D43FE' } });
-    else if (match[5]) segments.push({ text: match[5], style: { strike: true } });
-    
-    lastIndex = match.index + match[0].length;
+    const res = await mammoth.extractRawText({ arrayBuffer });
+    cleanText = res.value || '';
+  } else if (ext === '.html' || ext === '.htm') {
+    const rawHtml = isFile ? await input.text() : String(input || '');
+    if (typeof DOMParser !== 'undefined') {
+      const parser = new DOMParser();
+      const docParsed = parser.parseFromString(rawHtml, 'text/html');
+      docParsed.querySelectorAll('br').forEach(b => b.replaceWith('\n'));
+      docParsed.querySelectorAll('p, div, h1, h2, h3, h4, h5, h6, li, tr').forEach(el => {
+        el.prepend(document.createTextNode('\n'));
+      });
+      cleanText = docParsed.body.textContent || docParsed.body.innerText || '';
+    } else {
+      cleanText = rawHtml.replace(/<[^>]+>/g, ' ');
+    }
+  } else if (ext === '.md' || ext === '.markdown') {
+    const rawMd = isFile ? await input.text() : String(input || '');
+    cleanText = rawMd;
+  } else {
+    cleanText = isFile ? await input.text() : String(input || '');
   }
-  
-  if (lastIndex < remaining.length) {
-    segments.push({ text: remaining.slice(lastIndex), style: {} });
-  }
-  
-  if (segments.length === 0) {
-    segments.push({ text: remaining, style: {} });
-  }
-  
-  return segments.map(s => new TextRun({ text: s.text, size: 22, ...s.style }));
-}
 
-/**
- * HTML → DOCX
- */
-export async function htmlToDocx(htmlString, filename = 'document.docx') {
-  const temp = document.createElement('div');
-  temp.innerHTML = htmlString;
-  const plainText = temp.innerText || temp.textContent || '';
-  return markdownToDocx(plainText, filename);
+  if (settings.trimWhitespace !== false) {
+    cleanText = cleanText.split('\n').map(l => l.trimEnd()).join('\n').trim();
+  }
+
+  const blob = new Blob([cleanText], { type: 'text/plain;charset=utf-8;' });
+  return {
+    blob,
+    filename: filename.endsWith('.txt') ? filename : `${filename}.txt`,
+    text: cleanText,
+    preview: cleanText
+  };
 }
 
 // Universal TC39 Uint8Array toHex & setFromHex polyfill for Safari, older browsers, and pdfjs-dist
@@ -713,18 +1059,37 @@ export async function processDocTool(toolId, input, settings = {}) {
     case 'doc-to-docx':
     case 'md-to-docx':
     case 'html-to-docx': {
-      if (ext === '.html' || ext === '.htm') {
+      if (ext === '.pdf' || (isFile && input.type?.includes('pdf'))) {
+        return pdfToDocx(input, `${baseName}.docx`, settings);
+      } else if (ext === '.html' || ext === '.htm') {
         const htmlContent = isFile ? await input.text() : input;
-        return htmlToDocx(htmlContent, `${baseName}.docx`);
-      } else {
+        return htmlToDocx(htmlContent, `${baseName}.docx`, settings);
+      } else if (ext === '.md' || ext === '.markdown') {
         const mdContent = isFile ? await input.text() : input;
-        return markdownToDocx(mdContent, `${baseName}.docx`);
+        return markdownToDocx(mdContent, `${baseName}.docx`, settings);
+      } else if (ext === '.docx' || ext === '.doc') {
+        const mammoth = await import('mammoth');
+        let arrayBuffer;
+        if (input instanceof ArrayBuffer) {
+          arrayBuffer = input;
+        } else if (input && typeof input.arrayBuffer === 'function') {
+          arrayBuffer = await input.arrayBuffer();
+        } else {
+          return { blob: input, filename: `${baseName}.docx` };
+        }
+        const htmlRes = await mammoth.convertToHtml({ arrayBuffer });
+        return htmlToDocx(htmlRes.value || '<p>Document</p>', `${baseName}.docx`, settings);
+      } else if (['.png', '.jpg', '.jpeg', '.webp', '.svg', '.bmp', '.avif'].includes(ext)) {
+        return imageToDocx(input, `${baseName}.docx`, settings);
+      } else {
+        const textContent = isFile ? await input.text() : input;
+        return plainTextToDocx(textContent, `${baseName}.docx`, settings);
       }
     }
 
     case 'pdf-to-text':
     case 'doc-to-txt': {
-      return pdfToText(input, `${baseName}.txt`, settings);
+      return docToTxt(input, `${baseName}.txt`, settings);
     }
 
     case 'doc-to-pptx':
@@ -766,21 +1131,31 @@ export async function processDocTool(toolId, input, settings = {}) {
     }
 
     default: {
-      const cleanTarget = settings.targetFormat || (toolId.includes('-to-') ? toolId.split('-to-')[1] : 'pdf');
+      const cleanTarget = (settings.targetFormat || (toolId.includes('-to-') ? toolId.split('-to-')[1] : 'pdf')).toLowerCase();
       if (cleanTarget.includes('docx') || cleanTarget.includes('word')) {
-        return markdownToDocx(isFile ? await input.text() : input, `${baseName}.docx`);
+        if (ext === '.pdf' || (isFile && input.type?.includes('pdf'))) {
+          return pdfToDocx(input, `${baseName}.docx`, settings);
+        } else if (ext === '.html' || ext === '.htm') {
+          return htmlToDocx(isFile ? await input.text() : input, `${baseName}.docx`, settings);
+        } else if (ext === '.md' || ext === '.markdown') {
+          return markdownToDocx(isFile ? await input.text() : input, `${baseName}.docx`, settings);
+        } else if (['.png', '.jpg', '.jpeg', '.webp', '.svg', '.bmp'].includes(ext)) {
+          return imageToDocx(input, `${baseName}.docx`, settings);
+        } else {
+          return plainTextToDocx(isFile ? await input.text() : input, `${baseName}.docx`, settings);
+        }
+      }
+      if (cleanTarget.includes('txt') || cleanTarget.includes('text')) {
+        return docToTxt(input, `${baseName}.txt`, settings);
       }
       if (cleanTarget.includes('pptx')) {
-        return createPptxPresentation(input, `${baseName}.pptx`);
+        return createPptxPresentation(input, `${baseName}.pptx`, settings);
       }
       if (cleanTarget.includes('xlsx')) {
-        return documentToXlsx(input, `${baseName}.xlsx`);
+        return documentToXlsx(input, `${baseName}.xlsx`, settings);
       }
       if (cleanTarget.includes('md') || cleanTarget.includes('markdown')) {
         return textToMarkdown(input, `${baseName}.md`, settings);
-      }
-      if (cleanTarget.includes('txt')) {
-        return pdfToText(input, `${baseName}.txt`);
       }
       if (cleanTarget.includes('latex') || cleanTarget.includes('tex')) {
         const { processLatexTool } = await import('./latex-engine.js');

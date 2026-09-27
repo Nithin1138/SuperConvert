@@ -65,9 +65,12 @@ export function renderToolConverter() {
             
             <!-- Section 1: Upload Source -->
             <div class="tool-panel-block">
-              <div class="tool-panel-step">
-                <span class="step-badge">1</span>
-                <span class="step-title">Source File</span>
+              <div id="tool-source-step-heading" class="tool-panel-step tool-panel-step-with-badge">
+                <div class="step-title-wrap">
+                  <span class="step-badge">1</span>
+                  <span class="step-title" id="tool-source-step-title">Source File</span>
+                </div>
+                <span id="tool-source-count-badge" class="settings-count-badge" style="display: none;">0 Files Selected</span>
               </div>
 
               <!-- File Upload Zone -->
@@ -104,13 +107,7 @@ export function renderToolConverter() {
               </div>
 
               <!-- Uploaded Files List -->
-              <div id="tool-files-list" class="tool-files-list" style="display: none;">
-                <div class="files-list-header">
-                  <span id="tool-files-count">0 files selected</span>
-                  <button id="tool-files-clear" class="btn btn-sm btn-ghost" style="color: #EF4444;">Clear</button>
-                </div>
-                <div id="tool-files-items" class="files-list-items"></div>
-              </div>
+              <div id="tool-files-list" class="tool-files-list" style="display: none;"></div>
             </div>
 
             <!-- Section 2: Settings & Configuration -->

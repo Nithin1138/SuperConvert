@@ -459,7 +459,10 @@ export function renderConverter() {
                   <span id="queue-total-meta" class="queue-meta-text" style="color: var(--text-muted); font-size: 0.82rem;">0 KB</span>
                 </div>
                 <div class="queue-actions">
-                  <button id="btn-add-more-files" class="btn btn-secondary btn-sm">+ Add More Files</button>
+                  <button id="btn-add-more-files" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    <span>Add More Files</span>
+                  </button>
                   <button id="btn-clear-queue" class="btn btn-secondary btn-sm" style="color: #EF4444;">Clear All</button>
                 </div>
               </div>

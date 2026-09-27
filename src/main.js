@@ -1245,6 +1245,24 @@ function renderToolFilesList() {
   const container = document.getElementById('tool-files-list');
   const uploadZone = document.getElementById('tool-upload-zone');
   const fileInput = document.getElementById('tool-file-input');
+  const sourceCountBadge = document.getElementById('tool-source-count-badge');
+  const sourceStepTitle = document.getElementById('tool-source-step-title');
+
+  // Update left nav Step 1 header badge & title
+  if (sourceCountBadge) {
+    if (state.toolFiles.length === 0) {
+      sourceCountBadge.style.display = 'none';
+      if (sourceStepTitle) sourceStepTitle.textContent = 'Source File';
+    } else if (state.toolFiles.length === 1) {
+      sourceCountBadge.textContent = '1 File Selected';
+      sourceCountBadge.style.display = 'inline-flex';
+      if (sourceStepTitle) sourceStepTitle.textContent = 'Source File';
+    } else {
+      sourceCountBadge.textContent = `${state.toolFiles.length} Files Selected`;
+      sourceCountBadge.style.display = 'inline-flex';
+      if (sourceStepTitle) sourceStepTitle.textContent = 'Source Files';
+    }
+  }
 
   if (state.toolFiles.length === 0) {
     if (container) {
@@ -1325,6 +1343,7 @@ function renderToolFilesList() {
     }
   } else {
     // Multi-file batch queue
+    const totalBatchBytes = state.toolFiles.reduce((acc, f) => acc + (f.size || 0), 0);
     const itemsHtml = state.toolFiles.map((file, idx) => {
       const isActive = idx === state.activeSourceFileIdx;
       return `
@@ -1354,12 +1373,12 @@ function renderToolFilesList() {
         <div class="batch-files-header">
           <span class="batch-count-badge">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-            <span>${state.toolFiles.length} files selected</span>
+            <span>Batch Queue (${state.toolFiles.length}) • ${formatFileSize(totalBatchBytes)}</span>
           </span>
           <div class="batch-header-actions">
             <button type="button" class="batch-btn-add" id="tool-batch-add-btn" title="Add more files to batch">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              <span>+ Add</span>
+              <span>Add</span>
             </button>
             <button type="button" class="batch-btn-clear" id="tool-batch-clear-btn" title="Clear all files">
               <span>Clear</span>

@@ -626,7 +626,157 @@ export async function compileBatchZip(files, options = {}, onProgress = () => {}
 
 /**
  * Native Vector Print Driver
+ * Renders ONLY the document paper sheet in an isolated, pure print context.
+ * Bypasses all application UI (topbars, editor panes, floating pills) to guarantee
+ * 100% clean vector PDF downloads with native selectable text, vector graphics,
+ * exact page margins, and proper browser print pagination.
  */
-export function printVector() {
-  window.print();
+export function printVector(element, options = {}) {
+  const mount = element || document.getElementById('paper-mount');
+  if (!mount) {
+    window.print();
+    return;
+  }
+
+  const {
+    format = 'a4',
+    orientation = 'portrait',
+    margin = 15,
+    title = 'converted-document',
+    theme = 'github',
+    docSettings = null
+  } = options;
+
+  const docTitle = (title || 'document').replace(/\.(md|markdown|txt)$/i, '');
+
+  // 1. Gather all external stylesheets and inline styles from the host document
+  const styleNodes = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'));
+  const stylesHtml = styleNodes.map(node => node.outerHTML).join('\n');
+
+  // 2. Build dedicated print CSS for iframe
+  const printCss = `
+    @page {
+      size: ${format} ${orientation};
+      margin: ${margin}mm;
+    }
+    *, *::before, *::after {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    html, body {
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #ffffff !important;
+      color: #1e293b !important;
+      width: 100% !important;
+      height: auto !important;
+      font-size: 11pt !important;
+    }
+    .paper-sheet {
+      width: 100% !important;
+      max-width: 100% !important;
+      min-height: auto !important;
+      height: auto !important;
+      box-shadow: none !important;
+      border: none !important;
+      border-radius: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: transparent !important;
+      transform: none !important;
+    }
+    #paper-content {
+      width: 100% !important;
+      ${docSettings?.fontFamily ? `font-family: ${docSettings.fontFamily} !important;` : ''}
+      ${docSettings?.fontSize ? `font-size: ${docSettings.fontSize} !important;` : ''}
+      ${docSettings?.lineHeight ? `line-height: ${docSettings.lineHeight} !important;` : ''}
+    }
+    h1, h2, h3, h4, h5, h6 {
+      page-break-after: avoid !important;
+      break-after: avoid !important;
+    }
+    table, pre, blockquote, img, figure, .theme-academic table {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+    tr {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+    .paper-watermark {
+      pointer-events: none;
+    }
+  `;
+
+  // 3. Clone target element cleanly
+  const clone = mount.cloneNode(true);
+  clone.style.boxShadow = 'none';
+  clone.style.transform = 'none';
+  clone.style.margin = '0';
+  clone.style.padding = '0';
+
+  // 4. Create or reuse hidden print iframe
+  let iframe = document.getElementById('superconvert-print-frame');
+  if (iframe) {
+    iframe.remove();
+  }
+  iframe = document.createElement('iframe');
+  iframe.id = 'superconvert-print-frame';
+  iframe.style.position = 'fixed';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = '0';
+  iframe.style.visibility = 'hidden';
+  iframe.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(iframe);
+
+  const iframeDoc = iframe.contentWindow.document;
+  iframeDoc.open();
+  iframeDoc.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${docTitle}</title>
+  ${stylesHtml}
+  <style>${printCss}</style>
+</head>
+<body class="paper-sheet theme-${theme}">
+  ${clone.innerHTML}
+</body>
+</html>`);
+  iframeDoc.close();
+
+  // 5. Trigger print after resources and fonts settle
+  const triggerPrint = () => {
+    try {
+      const win = iframe.contentWindow;
+      win.focus();
+      win.print();
+    } catch (err) {
+      console.warn('Iframe print failed, falling back to window.print():', err);
+      window.print();
+    }
+  };
+
+  // Wait for fonts and images
+  const images = Array.from(iframeDoc.images || []);
+  const waitImages = images.length > 0
+    ? Promise.all(images.map(img => {
+        if (img.complete) return Promise.resolve();
+        return new Promise(r => { img.onload = r; img.onerror = r; setTimeout(r, 800); });
+      }))
+    : Promise.resolve();
+
+  const waitFonts = (iframeDoc.fonts && iframeDoc.fonts.ready)
+    ? iframeDoc.fonts.ready
+    : Promise.resolve();
+
+  Promise.all([waitImages, waitFonts]).then(() => {
+    setTimeout(triggerPrint, 150);
+  }).catch(() => {
+    setTimeout(triggerPrint, 250);
+  });
 }

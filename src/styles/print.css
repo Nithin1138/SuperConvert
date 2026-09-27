@@ -3,40 +3,79 @@
    ============================================================ */
 
 @media print {
-  /* Hide all UI elements except the document sheet */
+  /* 1. Global Reset for Print */
   html, body {
     background: #FFFFFF !important;
-    color: #000000 !important;
+    color: #1e293b !important;
     margin: 0 !important;
     padding: 0 !important;
     font-size: 11pt !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    width: 100% !important;
   }
 
+  /* 2. Hide ALL application shell, navigation, toolbars, and editor components */
   .navbar-header,
+  header,
+  nav,
   .hero-section,
-  .converter-header,
-  .converter-toolbar,
-  .dropzone-view,
-  .studio-pane-editor,
-  .preview-topbar,
-  .converter-actions-footer,
+  .hero-fullscreen,
+  .marquee-ticker-wrap,
+  .marquee-wrap,
+  .marquee-ticker,
+  .app-topbar,
+  .studio-col-editor,
+  .editor-subbar,
+  .studio-textarea-wrap,
+  .editor-status-bar,
+  .preview-subbar,
+  .super-floating-pill,
+  #super-floating-pill,
+  .tool-converter-section,
+  #tool-converter,
+  .super-showcase-section,
   .features-section,
+  .super-portal-section,
   .faq-section,
   .site-footer,
+  footer,
   .modal-backdrop,
-  .hero-glow-bg {
+  .app-modal,
+  .modal-overlay,
+  .command-palette-backdrop,
+  .cmd-palette-wrap,
+  .quick-category-nav,
+  .toast-container,
+  .toast,
+  .watermark-popover,
+  .doc-settings-popover,
+  .tools-catalog-section,
+  #view-batch,
+  .batch-workspace,
+  .hero-glow-bg,
+  canvas {
     display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    height: 0 !important;
+    width: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
   }
 
-  /* Reset layout containers for pure sheet printing */
-  .container,
+  /* 3. Strip layout constraints on wrapper parents so document flows naturally across pages */
+  #app,
   .converter-section,
+  .converter-full-wrap,
   .converter-shell,
-  .studio-view,
-  .studio-pane,
-  .studio-pane-preview,
-  .preview-scroll-area {
+  .studio-workspace,
+  .studio-col-preview,
+  .preview-canvas,
+  .paper-sheet-wrapper {
     display: block !important;
+    position: static !important;
     margin: 0 !important;
     padding: 0 !important;
     border: none !important;
@@ -44,31 +83,52 @@
     background: transparent !important;
     max-width: 100% !important;
     width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    transform: none !important;
   }
 
+  /* 4. The printed document sheet */
   .paper-sheet {
+    display: block !important;
     max-width: 100% !important;
     width: 100% !important;
+    min-height: auto !important;
+    height: auto !important;
     box-shadow: none !important;
+    border: none !important;
     border-radius: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
+    background: transparent !important;
+    transform: none !important;
+    overflow: visible !important;
   }
 
-  /* Page break rules */
+  #paper-content {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    color: inherit !important;
+  }
+
+  /* 5. Clean Page Breaks */
   h1, h2, h3, h4, h5, h6 {
-    page-break-after: avoid;
-    break-after: avoid;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
   }
 
-  table, pre, blockquote, img, .theme-academic table {
-    page-break-inside: avoid;
-    break-inside: avoid;
+  table, pre, blockquote, img, figure, .theme-academic table {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
   tr {
-    page-break-inside: avoid;
-    break-inside: avoid;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
   /* Ensure colors and background styling remain exact */
@@ -78,6 +138,6 @@
   }
 
   @page {
-    margin: 20mm;
+    margin: 15mm;
   }
 }

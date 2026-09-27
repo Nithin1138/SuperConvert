@@ -2364,7 +2364,15 @@ function setupStudioEditor() {
     btnVectorPrint.addEventListener('click', () => {
       playClickSound();
       animateButtonPress(btnVectorPrint);
-      printVector();
+      const paperSheet = document.getElementById('paper-mount');
+      printVector(paperSheet, {
+        theme: state.theme,
+        format: state.format,
+        orientation: state.orientation,
+        margin: state.margin,
+        title: state.currentDocTitle,
+        docSettings: state.docSettings
+      });
     });
   }
 
@@ -2557,7 +2565,17 @@ function setupCommandPalette() {
 
   const commands = [
     { title: 'Download PDF', desc: 'Instant compile & download', action: () => document.getElementById('btn-export-pdf')?.click() },
-    { title: 'Vector Print (PDF)', desc: 'Open vector print driver', action: () => printVector() },
+    { title: 'Vector Print (PDF)', desc: 'Open vector print driver', action: () => {
+      const paperSheet = document.getElementById('paper-mount');
+      printVector(paperSheet, {
+        theme: state.theme,
+        format: state.format,
+        orientation: state.orientation,
+        margin: state.margin,
+        title: state.currentDocTitle,
+        docSettings: state.docSettings
+      });
+    } },
     { title: 'Mode: Drop & Batch Convert', desc: 'Switch to multi-file batch upload', action: () => document.querySelector('.converter-tab[data-tab="batch"]')?.click() },
     { title: 'Mode: Live Studio', desc: 'Switch to live Markdown IDE', action: () => document.querySelector('.converter-tab[data-tab="studio"]')?.click() },
     { title: 'Theme: Super Modern', desc: 'Electric indigo highlights', action: () => setTheme('super-modern') },

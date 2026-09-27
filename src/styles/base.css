@@ -72,6 +72,14 @@ body {
   width: 100%;
 }
 
+@media (min-width: 961px) {
+  #page-tool:has(#tool-converter:not([style*="display: none"])) {
+    height: calc(100vh - 68px);
+    max-height: calc(100vh - 68px);
+    overflow: hidden;
+  }
+}
+
 #page-story {
   width: 100%;
   transform: none !important;

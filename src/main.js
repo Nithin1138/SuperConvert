@@ -727,11 +727,13 @@ function activateUniversalTool(tool) {
   renderToolSettings(tool);
 
   // Reset states
-  document.getElementById('tool-files-list').style.display = 'none';
+  state.toolFiles = [];
+  renderToolFilesList();
+  renderToolOutputEmptyState();
   document.getElementById('tool-output-empty').style.display = 'flex';
   document.getElementById('tool-output-processing').style.display = 'none';
   document.getElementById('tool-output-result').style.display = 'none';
-  document.getElementById('tool-convert-btn').disabled = !tool.hasTextInput;
+  updateToolConvertButton();
 
   // Text input setup & LaTeX sample button
   const isLatexGenerator = tool.id === 'text-to-latex' || tool.id === 'file-to-latex';
@@ -1201,7 +1203,7 @@ function setupToolConverter() {
 }
 
 function handleToolFilesAdd(fileList) {
-  state.toolFiles = [...state.toolFiles, ...fileList];
+  state.toolFiles = Array.from(fileList);
   renderToolFilesList();
   updateToolConvertButton();
   playSuccessChime();
@@ -1209,51 +1211,235 @@ function handleToolFilesAdd(fileList) {
 
 function renderToolFilesList() {
   const container = document.getElementById('tool-files-list');
-  const itemsEl = document.getElementById('tool-files-items');
-  const countEl = document.getElementById('tool-files-count');
+  const uploadZone = document.getElementById('tool-upload-zone');
+  const fileInput = document.getElementById('tool-file-input');
 
   if (state.toolFiles.length === 0) {
-    if (container) container.style.display = 'none';
+    if (container) {
+      container.style.display = 'none';
+      container.innerHTML = '';
+    }
+    if (uploadZone) uploadZone.style.display = 'block';
+    renderToolOutputEmptyState();
     return;
   }
 
-  if (container) container.style.display = 'block';
-  if (countEl) countEl.textContent = `${state.toolFiles.length} file${state.toolFiles.length > 1 ? 's' : ''} selected`;
+  // Collapse the bulky upload zone to save vertical screen space
+  if (uploadZone) uploadZone.style.display = 'none';
 
-  if (itemsEl) {
-    itemsEl.innerHTML = state.toolFiles.map((file, idx) => `
-      <div class="file-item">
-        <div class="file-item-left">
-          <span class="file-item-icon">📄</span>
-          <span class="file-item-name">${file.name}</span>
+  if (container) {
+    container.style.display = 'block';
+    const file = state.toolFiles[0];
+    const isImage = file.type?.startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp|svg|avif)$/i.test(file.name);
+
+    let thumbHtml = '';
+    if (isImage) {
+      const thumbUrl = URL.createObjectURL(file);
+      thumbHtml = `<img src="${thumbUrl}" class="selected-file-thumb" alt="Thumbnail" />`;
+    } else {
+      let icon = '📄';
+      if (/\.(pdf|docx?|pptx?|xlsx?)$/i.test(file.name)) icon = '📑';
+      else if (/\.(mp3|wav|ogg|flac|aac)$/i.test(file.name)) icon = '🎵';
+      else if (/\.(mp4|webm|mov|mkv)$/i.test(file.name)) icon = '🎬';
+      else if (/\.(obj|stl|fbx|gltf)$/i.test(file.name)) icon = '🧊';
+      else if (/\.(json|csv|xml|yaml)$/i.test(file.name)) icon = '📊';
+      thumbHtml = `<span class="selected-file-icon">${icon}</span>`;
+    }
+
+    container.innerHTML = `
+      <div class="selected-file-compact">
+        <div class="selected-file-thumb-wrap">
+          ${thumbHtml}
         </div>
-        <span class="file-item-size">${formatFileSize(file.size)}</span>
-        <button class="file-item-remove" data-idx="${idx}" title="Remove">✕</button>
+        <div class="selected-file-details">
+          <div class="selected-file-name" title="${file.name}">${file.name}</div>
+          <div class="selected-file-meta">
+            <span class="file-size-badge">${formatFileSize(file.size)}</span>
+            <span class="file-ready-badge">✓ Ready to Convert</span>
+          </div>
+        </div>
+        <div class="selected-file-actions">
+          <button type="button" class="btn-file-replace" id="tool-change-file-btn" title="Choose a different file">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <span>Change</span>
+          </button>
+          <button type="button" class="btn-file-delete" id="tool-remove-file-btn" title="Remove file">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
       </div>
-    `).join('');
+    `;
 
-    itemsEl.querySelectorAll('.file-item-remove').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+    const changeBtn = document.getElementById('tool-change-file-btn');
+    if (changeBtn && fileInput) {
+      changeBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         playClickSound();
-        const idx = Number(btn.dataset.idx);
-        state.toolFiles.splice(idx, 1);
+        fileInput.click();
+      });
+    }
+
+    const removeBtn = document.getElementById('tool-remove-file-btn');
+    if (removeBtn) {
+      removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        playClickSound();
+        state.toolFiles = [];
         renderToolFilesList();
         updateToolConvertButton();
       });
-    });
+    }
   }
+
+  renderToolOutputCanvasReady();
+}
+
+function renderToolOutputCanvasReady() {
+  const emptyEl = document.getElementById('tool-output-empty');
+  const resultEl = document.getElementById('tool-output-result');
+  const processingEl = document.getElementById('tool-output-processing');
+  const statusPill = document.getElementById('tool-output-status-pill');
+
+  if (processingEl && processingEl.style.display !== 'none') return;
+  if (resultEl && resultEl.style.display !== 'none') return;
+  if (!emptyEl) return;
+
+  const tool = getToolById(state.activeTool);
+  if (!tool) return;
+
+  if (state.toolFiles.length === 0 && !state.toolTextInput?.trim()) {
+    renderToolOutputEmptyState();
+    return;
+  }
+
+  emptyEl.style.display = 'flex';
+
+  if (statusPill) {
+    statusPill.textContent = 'Ready to Convert';
+    statusPill.style.color = '#34D399';
+    statusPill.style.borderColor = 'rgba(16, 185, 129, 0.35)';
+    statusPill.style.background = 'rgba(16, 185, 129, 0.12)';
+  }
+
+  const file = state.toolFiles[0];
+  if (file) {
+    const isImage = file.type?.startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp|svg|avif)$/i.test(file.name);
+    let previewContent = '';
+
+    if (isImage) {
+      const srcUrl = URL.createObjectURL(file);
+      previewContent = `<img src="${srcUrl}" class="output-ready-img" alt="${file.name}" />`;
+    } else {
+      let icon = '📄';
+      if (/\.(pdf|docx?|pptx?|xlsx?)$/i.test(file.name)) icon = '📑';
+      else if (/\.(mp3|wav|ogg|flac|aac)$/i.test(file.name)) icon = '🎵';
+      else if (/\.(mp4|webm|mov|mkv)$/i.test(file.name)) icon = '🎬';
+      else if (/\.(obj|stl|fbx|gltf)$/i.test(file.name)) icon = '🧊';
+      else if (/\.(json|csv|xml|yaml)$/i.test(file.name)) icon = '📊';
+      previewContent = `<div class="output-ready-icon-big">${icon}</div>`;
+    }
+
+    const ext = file.name.split('.').pop() || 'file';
+
+    emptyEl.innerHTML = `
+      <div class="output-ready-hero">
+        <div class="output-ready-preview-frame">
+          ${previewContent}
+          <div class="output-ready-badge">
+            <span class="pulse-dot"></span>
+            <span>Source Ready</span>
+          </div>
+        </div>
+        <div class="output-ready-info">
+          <h3 class="output-ready-title">${file.name}</h3>
+          <div class="output-ready-meta">
+            <span>Size: <strong>${formatFileSize(file.size)}</strong></span>
+            <span>Input: <strong>.${ext.toUpperCase()}</strong></span>
+            <span>Output: <strong>${tool.outputFormat?.toUpperCase() || 'Target'}</strong></span>
+          </div>
+        </div>
+        <div class="output-ready-cta-wrap">
+          <button type="button" id="tool-canvas-convert-btn" class="btn btn-primary btn-lg output-canvas-convert-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+            <span>⚡ Convert & Download Output</span>
+          </button>
+          <p class="output-ready-hint">Click above or adjust conversion parameters on the left panel anytime.</p>
+        </div>
+      </div>
+    `;
+
+    const canvasBtn = document.getElementById('tool-canvas-convert-btn');
+    if (canvasBtn) {
+      canvasBtn.addEventListener('click', () => {
+        playClickSound();
+        animateButtonPress(canvasBtn);
+        executeToolConversion();
+      });
+    }
+  }
+}
+
+function renderToolOutputEmptyState() {
+  const emptyEl = document.getElementById('tool-output-empty');
+  const statusPill = document.getElementById('tool-output-status-pill');
+  if (statusPill) {
+    statusPill.textContent = 'Awaiting Source File';
+    statusPill.style.color = '';
+    statusPill.style.borderColor = '';
+    statusPill.style.background = '';
+  }
+  if (!emptyEl) return;
+  emptyEl.innerHTML = `
+    <div class="output-empty-frame">
+      <div class="output-empty-icon">
+        <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="12" y1="18" x2="12" y2="12"/>
+          <line x1="9" y1="15" x2="12" y2="12"/>
+          <line x1="15" y1="15" x2="12" y2="12"/>
+        </svg>
+      </div>
+      <h3 class="output-empty-title">Output Canvas Ready</h3>
+      <p class="output-empty-desc">Choose a file on the left to preview, configure settings, and convert instantly.</p>
+      <div class="output-empty-pills">
+        <span class="empty-pill">⚡ Real-time Rendering</span>
+        <span class="empty-pill">🔒 Private Local Processing</span>
+        <span class="empty-pill">🎯 Exact Aspect & Quality</span>
+      </div>
+    </div>
+  `;
 }
 
 function updateToolConvertButton() {
   const btn = document.getElementById('tool-convert-btn');
+  const text = document.getElementById('tool-convert-text');
   if (!btn) return;
 
-  const tool = getToolById(state.activeTool);
   const hasFiles = state.toolFiles.length > 0;
-  const hasText = state.toolTextInput.trim().length > 0;
-  
-  btn.disabled = !hasFiles && !hasText;
+  const hasText = state.toolTextInput?.trim().length > 0;
+  const isReady = hasFiles || hasText;
+
+  btn.disabled = !isReady;
+
+  if (isReady) {
+    btn.classList.add('btn-ready');
+    if (text) {
+      text.textContent = '⚡ Convert & Download';
+    }
+  } else {
+    btn.classList.remove('btn-ready');
+    if (text) text.textContent = 'Convert & Download';
+  }
 }
 
 function formatFileSize(bytes) {
@@ -1341,8 +1527,13 @@ async function executeToolConversion() {
     if (emptyTitle) emptyTitle.textContent = '⚠️ Conversion Error';
     if (emptyDesc) emptyDesc.textContent = err.message || 'Something went wrong. Please check your file and try again.';
   } finally {
-    if (convertBtn) convertBtn.disabled = false;
-    if (convertText) convertText.textContent = 'Convert & Download';
+    if (convertBtn) {
+      convertBtn.disabled = false;
+      convertBtn.classList.add('btn-ready');
+    }
+    if (convertText) {
+      convertText.textContent = state.toolResult ? '⚡ Re-convert with Settings' : '⚡ Convert & Download';
+    }
   }
 }
 
@@ -1604,6 +1795,17 @@ function showToolResult(tool, result) {
   const downloadText = document.getElementById('tool-download-text');
   if (downloadText) {
     downloadText.textContent = isLatex ? 'Download LaTeX (.tex)' : `Download ${result.filename}`;
+  }
+
+  // Update left sticky action text so newbie knows they can re-convert or tweak settings anytime
+  const convertText = document.getElementById('tool-convert-text');
+  if (convertText) {
+    convertText.textContent = '⚡ Re-convert with Settings';
+  }
+  const convertBtn = document.getElementById('tool-convert-btn');
+  if (convertBtn) {
+    convertBtn.disabled = false;
+    convertBtn.classList.add('btn-ready');
   }
 }
 

@@ -54,6 +54,7 @@ import { processDataTool } from './core/data-engine.js';
 import { processAudioVideoTool } from './core/audio-video-engine.js';
 import { convert3DModel } from './core/three-d-engine.js';
 import { processLatexTool } from './core/latex-engine.js';
+import JSZip from 'jszip';
 
 // Application State
 const state = {
@@ -97,8 +98,13 @@ const state = {
   searchQuery: '',         // Live tool search query
   quickFilter: 'all',       // Quick filter chip
   toolFiles: [],           // Files uploaded for tool conversion
+  activeSourceFileIdx: 0,  // Active inspected source file index before conversion
   toolSettings: {},        // Current tool settings
-  toolResult: null,        // Result blob + metadata
+  toolResult: null,        // Result blob + metadata of active/selected file
+  toolResults: [],         // All results for multi-file conversion
+  selectedResultIdx: 0,    // Active inspected result file index
+  batchZipBlob: null,      // JSZip blob if multiple files
+  batchZipFilename: '',    // Name of the batch ZIP
   toolTextInput: ''        // Text input for code/data tools
 };
 
@@ -653,8 +659,13 @@ function activateStudioTool(tool) {
 function activateUniversalTool(tool) {
   state.activeTool = tool.id;
   state.toolFiles = [];
+  state.activeSourceFileIdx = 0;
   state.toolSettings = {};
   state.toolResult = null;
+  state.toolResults = [];
+  state.selectedResultIdx = 0;
+  state.batchZipBlob = null;
+  state.batchZipFilename = '';
   state.toolTextInput = '';
 
   // Initialize default settings
@@ -1203,7 +1214,18 @@ function setupToolConverter() {
 }
 
 function handleToolFilesAdd(fileList) {
-  state.toolFiles = Array.from(fileList);
+  const newFiles = Array.from(fileList);
+  if (state.toolFiles.length === 0) {
+    state.toolFiles = newFiles;
+  } else {
+    state.toolFiles = [...state.toolFiles, ...newFiles];
+  }
+  state.activeSourceFileIdx = 0;
+  state.toolResult = null;
+  state.toolResults = [];
+  state.selectedResultIdx = 0;
+  state.batchZipBlob = null;
+  state.batchZipFilename = '';
   renderToolFilesList();
   updateToolConvertButton();
   playSuccessChime();
@@ -1227,29 +1249,30 @@ function renderToolFilesList() {
   // Collapse the bulky upload zone to save vertical screen space
   if (uploadZone) uploadZone.style.display = 'none';
 
-  if (container) {
-    container.style.display = 'block';
-    const file = state.toolFiles[0];
-    const isImage = file.type?.startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp|svg|avif)$/i.test(file.name);
+  if (!container) return;
+  container.style.display = 'block';
 
-    let thumbHtml = '';
+  const getFileThumb = (file) => {
+    const isImage = file.type?.startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp|svg|avif)$/i.test(file.name);
     if (isImage) {
       const thumbUrl = URL.createObjectURL(file);
-      thumbHtml = `<img src="${thumbUrl}" class="selected-file-thumb" alt="Thumbnail" />`;
-    } else {
-      let icon = '📄';
-      if (/\.(pdf|docx?|pptx?|xlsx?)$/i.test(file.name)) icon = '📑';
-      else if (/\.(mp3|wav|ogg|flac|aac)$/i.test(file.name)) icon = '🎵';
-      else if (/\.(mp4|webm|mov|mkv)$/i.test(file.name)) icon = '🎬';
-      else if (/\.(obj|stl|fbx|gltf)$/i.test(file.name)) icon = '🧊';
-      else if (/\.(json|csv|xml|yaml)$/i.test(file.name)) icon = '📊';
-      thumbHtml = `<span class="selected-file-icon">${icon}</span>`;
+      return `<img src="${thumbUrl}" class="selected-file-thumb" alt="Thumbnail" />`;
     }
+    let icon = '📄';
+    if (/\.(pdf|docx?|pptx?|xlsx?)$/i.test(file.name)) icon = '📑';
+    else if (/\.(mp3|wav|ogg|flac|aac)$/i.test(file.name)) icon = '🎵';
+    else if (/\.(mp4|webm|mov|mkv)$/i.test(file.name)) icon = '🎬';
+    else if (/\.(obj|stl|fbx|gltf)$/i.test(file.name)) icon = '🧊';
+    else if (/\.(json|csv|xml|yaml)$/i.test(file.name)) icon = '📊';
+    return `<span class="selected-file-icon">${icon}</span>`;
+  };
 
+  if (state.toolFiles.length === 1) {
+    const file = state.toolFiles[0];
     container.innerHTML = `
       <div class="selected-file-compact">
         <div class="selected-file-thumb-wrap">
-          ${thumbHtml}
+          ${getFileThumb(file)}
         </div>
         <div class="selected-file-details">
           <div class="selected-file-name" title="${file.name}">${file.name}</div>
@@ -1259,13 +1282,12 @@ function renderToolFilesList() {
           </div>
         </div>
         <div class="selected-file-actions">
-          <button type="button" class="btn-file-replace" id="tool-change-file-btn" title="Choose a different file">
+          <button type="button" class="btn-file-replace" id="tool-add-more-btn" title="Add more files to convert together">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="17 8 12 3 7 8"/>
-              <line x1="12" y1="3" x2="12" y2="15"/>
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
-            <span>Change</span>
+            <span>Add</span>
           </button>
           <button type="button" class="btn-file-delete" id="tool-remove-file-btn" title="Remove file">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -1277,9 +1299,9 @@ function renderToolFilesList() {
       </div>
     `;
 
-    const changeBtn = document.getElementById('tool-change-file-btn');
-    if (changeBtn && fileInput) {
-      changeBtn.addEventListener('click', (e) => {
+    const addBtn = document.getElementById('tool-add-more-btn');
+    if (addBtn && fileInput) {
+      addBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         playClickSound();
         fileInput.click();
@@ -1292,10 +1314,111 @@ function renderToolFilesList() {
         e.stopPropagation();
         playClickSound();
         state.toolFiles = [];
+        state.activeSourceFileIdx = 0;
         renderToolFilesList();
         updateToolConvertButton();
       });
     }
+  } else {
+    // Multi-file batch queue
+    const itemsHtml = state.toolFiles.map((file, idx) => {
+      const isActive = idx === state.activeSourceFileIdx;
+      return `
+        <div class="batch-file-card ${isActive ? 'active-inspect' : ''}" data-idx="${idx}">
+          <div class="batch-card-thumb-wrap">
+            ${getFileThumb(file)}
+          </div>
+          <div class="batch-card-info">
+            <div class="batch-card-name" title="${file.name}">${file.name}</div>
+            <div class="batch-card-meta">
+              <span>${formatFileSize(file.size)}</span>
+              ${isActive ? '<span class="batch-card-active-tag">👁️ Previewing</span>' : ''}
+            </div>
+          </div>
+          <button type="button" class="batch-card-remove" data-remove-idx="${idx}" title="Remove this file">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+      `;
+    }).join('');
+
+    container.innerHTML = `
+      <div class="batch-files-wrap">
+        <div class="batch-files-header">
+          <span class="batch-count-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            <span>${state.toolFiles.length} files selected</span>
+          </span>
+          <div class="batch-header-actions">
+            <button type="button" class="batch-btn-add" id="tool-batch-add-btn" title="Add more files to batch">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span>+ Add</span>
+            </button>
+            <button type="button" class="batch-btn-clear" id="tool-batch-clear-btn" title="Clear all files">
+              <span>Clear</span>
+            </button>
+          </div>
+        </div>
+        <div class="batch-files-list">
+          ${itemsHtml}
+        </div>
+      </div>
+    `;
+
+    const batchAddBtn = document.getElementById('tool-batch-add-btn');
+    if (batchAddBtn && fileInput) {
+      batchAddBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        playClickSound();
+        fileInput.click();
+      });
+    }
+
+    const batchClearBtn = document.getElementById('tool-batch-clear-btn');
+    if (batchClearBtn) {
+      batchClearBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        playClickSound();
+        state.toolFiles = [];
+        state.activeSourceFileIdx = 0;
+        renderToolFilesList();
+        updateToolConvertButton();
+      });
+    }
+
+    // Card click selects file for right-side preview
+    container.querySelectorAll('.batch-file-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.batch-card-remove')) return;
+        const idx = parseInt(card.dataset.idx, 10);
+        if (!isNaN(idx) && idx !== state.activeSourceFileIdx) {
+          playClickSound();
+          state.activeSourceFileIdx = idx;
+          renderToolFilesList();
+          renderToolOutputCanvasReady();
+        }
+      });
+    });
+
+    // Remove single file
+    container.querySelectorAll('.batch-card-remove').forEach(rmBtn => {
+      rmBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        playClickSound();
+        const rmIdx = parseInt(rmBtn.dataset.removeIdx, 10);
+        if (!isNaN(rmIdx)) {
+          state.toolFiles.splice(rmIdx, 1);
+          if (state.activeSourceFileIdx >= state.toolFiles.length) {
+            state.activeSourceFileIdx = Math.max(0, state.toolFiles.length - 1);
+          }
+          renderToolFilesList();
+          updateToolConvertButton();
+        }
+      });
+    });
   }
 
   renderToolOutputCanvasReady();
@@ -1328,7 +1451,10 @@ function renderToolOutputCanvasReady() {
     statusPill.style.background = 'rgba(16, 185, 129, 0.12)';
   }
 
-  const file = state.toolFiles[0];
+  const isBatch = state.toolFiles.length > 1;
+  const currentIdx = Math.min(Math.max(0, state.activeSourceFileIdx || 0), Math.max(0, state.toolFiles.length - 1));
+  const file = state.toolFiles[currentIdx] || state.toolFiles[0];
+
   if (file) {
     const isImage = file.type?.startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp|svg|avif)$/i.test(file.name);
     let previewContent = '';
@@ -1348,21 +1474,43 @@ function renderToolOutputCanvasReady() {
 
     const ext = file.name.split('.').pop() || 'file';
 
+    let batchTabsHtml = '';
+    if (isBatch) {
+      batchTabsHtml = `
+        <div class="batch-source-tabs-wrap">
+          <div class="batch-source-tabs-label">
+            <span>Tap file to inspect preview (${currentIdx + 1} of ${state.toolFiles.length}):</span>
+            <span>⚡ Batch Queue</span>
+          </div>
+          <div class="batch-source-tabs" id="batch-source-tabs">
+            ${state.toolFiles.map((f, i) => `
+              <button type="button" class="batch-source-tab ${i === currentIdx ? 'active' : ''}" data-idx="${i}">
+                <span class="tab-num">${i + 1}</span>
+                <span class="tab-name">${f.name}</span>
+              </button>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
     emptyEl.innerHTML = `
       <div class="output-ready-hero">
+        ${batchTabsHtml}
         <div class="output-ready-preview-frame">
           ${previewContent}
           <div class="output-ready-badge">
             <span class="pulse-dot"></span>
-            <span>Source Ready</span>
+            <span>${isBatch ? `Source ${currentIdx + 1} of ${state.toolFiles.length}` : 'Source Ready'}</span>
           </div>
         </div>
         <div class="output-ready-info">
           <h3 class="output-ready-title">${file.name}</h3>
           <div class="output-ready-meta">
+            ${isBatch ? `<span>Selected: <strong>#${currentIdx + 1}</strong></span>` : ''}
             <span>Size: <strong>${formatFileSize(file.size)}</strong></span>
             <span>Input: <strong>.${ext.toUpperCase()}</strong></span>
-            <span>Output: <strong>${tool.outputFormat?.toUpperCase() || 'Target'}</strong></span>
+            <span>Output: <strong>${(state.toolSettings?.targetFormat || tool.outputFormat || 'Target').toUpperCase()}</strong></span>
           </div>
         </div>
         <div class="output-ready-cta-wrap">
@@ -1370,12 +1518,30 @@ function renderToolOutputCanvasReady() {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
             </svg>
-            <span>⚡ Convert & Download Output</span>
+            <span>${isBatch ? `⚡ Convert All ${state.toolFiles.length} Files & Download ZIP` : '⚡ Convert & Download Output'}</span>
           </button>
-          <p class="output-ready-hint">Click above or adjust conversion parameters on the left panel anytime.</p>
+          <p class="output-ready-hint">${isBatch ? `All ${state.toolFiles.length} files will be converted locally with your settings and bundled into a ZIP file.` : 'Click above or adjust conversion parameters on the left panel anytime.'}</p>
         </div>
       </div>
     `;
+
+    // Wire up batch tabs clicks
+    if (isBatch) {
+      const tabsWrap = document.getElementById('batch-source-tabs');
+      if (tabsWrap) {
+        tabsWrap.querySelectorAll('.batch-source-tab').forEach(tab => {
+          tab.addEventListener('click', () => {
+            const idx = parseInt(tab.dataset.idx, 10);
+            if (!isNaN(idx) && idx !== state.activeSourceFileIdx) {
+              playClickSound();
+              state.activeSourceFileIdx = idx;
+              renderToolFilesList();
+              renderToolOutputCanvasReady();
+            }
+          });
+        });
+      }
+    }
 
     const canvasBtn = document.getElementById('tool-canvas-convert-btn');
     if (canvasBtn) {
@@ -1434,7 +1600,11 @@ function updateToolConvertButton() {
   if (isReady) {
     btn.classList.add('btn-ready');
     if (text) {
-      text.textContent = '⚡ Convert & Download';
+      if (state.toolFiles.length > 1) {
+        text.textContent = `⚡ Convert All ${state.toolFiles.length} Files`;
+      } else {
+        text.textContent = '⚡ Convert & Download';
+      }
     }
   } else {
     btn.classList.remove('btn-ready');
@@ -1470,7 +1640,9 @@ async function executeToolConversion() {
   document.getElementById('tool-output-processing').style.display = 'flex';
   
   const progressBar = document.getElementById('tool-progress-bar');
-  if (progressBar) progressBar.style.width = '30%';
+  const processingText = document.querySelector('.processing-text');
+  if (progressBar) progressBar.style.width = '10%';
+  if (processingText) processingText.textContent = 'Preparing conversion...';
 
   const convertBtn = document.getElementById('tool-convert-btn');
   const convertText = document.getElementById('tool-convert-text');
@@ -1478,45 +1650,122 @@ async function executeToolConversion() {
   if (convertText) convertText.textContent = 'Converting...';
 
   try {
-    let result;
+    const isMultiFile = state.toolFiles.length > 1;
 
-    // Determine input: file or text
-    const input = state.toolFiles.length > 0 ? state.toolFiles[0] : state.toolTextInput;
+    if (isMultiFile) {
+      const results = [];
+      const total = state.toolFiles.length;
 
-    if (progressBar) progressBar.style.width = '60%';
+      for (let i = 0; i < total; i++) {
+        const file = state.toolFiles[i];
+        const pct = Math.round(((i) / total) * 85) + 10;
+        if (progressBar) progressBar.style.width = `${pct}%`;
+        if (processingText) {
+          processingText.textContent = `Converting file ${i + 1} of ${total}: ${file.name}...`;
+        }
 
-    switch (tool.engine) {
-      case 'image':
-        result = await processImageTool(tool.id, input, state.toolSettings);
-        break;
-      case 'doc':
-        result = await processDocTool(tool.id, input, state.toolSettings);
-        break;
-      case 'media':
-        result = await processAudioVideoTool(tool.id, input, state.toolSettings);
-        break;
-      case '3d':
-        result = await convert3DModel(input, state.toolSettings?.targetFormat || tool.outputFormat, state.toolSettings);
-        break;
-      case 'data':
-        result = await processDataTool(tool.id, input, state.toolSettings);
-        break;
-      case 'latex':
-        result = await processLatexTool(tool.id, input, state.toolSettings);
-        break;
-      default:
-        throw new Error(`Unknown engine: ${tool.engine}`);
+        let res;
+        switch (tool.engine) {
+          case 'image':
+            res = await processImageTool(tool.id, file, state.toolSettings);
+            break;
+          case 'doc':
+            res = await processDocTool(tool.id, file, state.toolSettings);
+            break;
+          case 'media':
+            res = await processAudioVideoTool(tool.id, file, state.toolSettings);
+            break;
+          case '3d':
+            res = await convert3DModel(file, state.toolSettings?.targetFormat || tool.outputFormat, state.toolSettings);
+            break;
+          case 'data':
+            res = await processDataTool(tool.id, file, state.toolSettings);
+            break;
+          case 'latex':
+            res = await processLatexTool(tool.id, file, state.toolSettings);
+            break;
+          default:
+            throw new Error(`Unknown engine: ${tool.engine}`);
+        }
+        res.sourceFile = file;
+        results.push(res);
+      }
+
+      if (processingText) processingText.textContent = 'Bundling all converted files into ZIP...';
+      if (progressBar) progressBar.style.width = '95%';
+
+      // Package results into JSZip
+      const zip = new JSZip();
+      const usedNames = new Set();
+      results.forEach((r, idx) => {
+        let name = r.filename || `converted-${idx + 1}`;
+        if (usedNames.has(name)) {
+          const ext = name.includes('.') ? '.' + name.split('.').pop() : '';
+          const base = name.replace(/\.[^.]+$/, '');
+          name = `${base}_${idx + 1}${ext}`;
+        }
+        usedNames.add(name);
+        r.filename = name;
+        if (r.blob) {
+          zip.file(name, r.blob);
+        } else if (r.text || r.preview) {
+          zip.file(name, r.text || r.preview);
+        }
+      });
+
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const cleanToolId = (tool.id || 'superconvert').replace(/[^a-z0-9_-]/gi, '_');
+      const zipFilename = `${cleanToolId}-batch-${results.length}-files.zip`;
+
+      state.toolResults = results;
+      state.selectedResultIdx = 0;
+      state.toolResult = results[0];
+      state.batchZipBlob = zipBlob;
+      state.batchZipFilename = zipFilename;
+
+      if (progressBar) progressBar.style.width = '100%';
+      setTimeout(() => showToolResult(tool, results[0], results), 300);
+      playSuccessChime();
+    } else {
+      const input = state.toolFiles.length > 0 ? state.toolFiles[0] : state.toolTextInput;
+      if (progressBar) progressBar.style.width = '60%';
+      if (processingText) processingText.textContent = 'Processing file with active settings...';
+
+      let result;
+      switch (tool.engine) {
+        case 'image':
+          result = await processImageTool(tool.id, input, state.toolSettings);
+          break;
+        case 'doc':
+          result = await processDocTool(tool.id, input, state.toolSettings);
+          break;
+        case 'media':
+          result = await processAudioVideoTool(tool.id, input, state.toolSettings);
+          break;
+        case '3d':
+          result = await convert3DModel(input, state.toolSettings?.targetFormat || tool.outputFormat, state.toolSettings);
+          break;
+        case 'data':
+          result = await processDataTool(tool.id, input, state.toolSettings);
+          break;
+        case 'latex':
+          result = await processLatexTool(tool.id, input, state.toolSettings);
+          break;
+        default:
+          throw new Error(`Unknown engine: ${tool.engine}`);
+      }
+
+      if (progressBar) progressBar.style.width = '100%';
+
+      state.toolResults = [result];
+      state.selectedResultIdx = 0;
+      state.toolResult = result;
+      state.batchZipBlob = null;
+      state.batchZipFilename = '';
+
+      setTimeout(() => showToolResult(tool, result, [result]), 300);
+      playSuccessChime();
     }
-
-    if (progressBar) progressBar.style.width = '100%';
-
-    // Store result
-    state.toolResult = result;
-
-    // Show result
-    setTimeout(() => showToolResult(tool, result), 300);
-
-    playSuccessChime();
   } catch (err) {
     console.error('Conversion error:', err);
     document.getElementById('tool-output-processing').style.display = 'none';
@@ -1540,15 +1789,63 @@ async function executeToolConversion() {
 /**
  * Display conversion result
  */
-function showToolResult(tool, result) {
+function showToolResult(tool, result, allResults) {
   document.getElementById('tool-output-processing').style.display = 'none';
   document.getElementById('tool-output-result').style.display = 'flex';
+
+  const results = allResults && allResults.length > 0 ? allResults : (state.toolResults?.length > 0 ? state.toolResults : [result]);
+  const isBatch = results.length > 1;
+
+  // Batch Result Selector Tabs
+  const batchTabsEl = document.getElementById('tool-result-batch-tabs');
+  if (batchTabsEl) {
+    if (isBatch) {
+      batchTabsEl.style.display = 'block';
+      batchTabsEl.innerHTML = `
+        <div class="result-files-tabs-wrap">
+          <div class="result-files-tabs-header">
+            <span>All ${results.length} files converted successfully! Tap to preview & download:</span>
+            <span class="tabs-hint">✓ Ready</span>
+          </div>
+          <div class="result-files-tabs" id="result-files-tabs-list">
+            ${results.map((r, i) => `
+              <button type="button" class="result-file-tab ${i === state.selectedResultIdx ? 'active' : ''}" data-idx="${i}">
+                <span class="tab-check">✓</span>
+                <span class="tab-name" title="${r.filename}">${r.filename}</span>
+                <span class="tab-size">${formatFileSize(r.blob?.size || r.outputSize || 0)}</span>
+              </button>
+            `).join('')}
+          </div>
+        </div>
+      `;
+
+      // Wire up tab clicks
+      batchTabsEl.querySelectorAll('.result-file-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          const idx = parseInt(tab.dataset.idx, 10);
+          if (!isNaN(idx) && idx !== state.selectedResultIdx) {
+            playClickSound();
+            state.selectedResultIdx = idx;
+            state.toolResult = results[idx];
+            showToolResult(tool, results[idx], results);
+          }
+        });
+      });
+    } else {
+      batchTabsEl.style.display = 'none';
+      batchTabsEl.innerHTML = '';
+    }
+  }
 
   const isLatex = (result.isLatex || tool.id === 'text-to-latex' || tool.id === 'file-to-latex' || result.filename?.endsWith('.tex')) && !result.filename?.match(/\.(pdf|docx)$/i);
 
   // Stats
   const statsEl = document.getElementById('tool-result-stats');
   let statsHtml = '';
+
+  if (isBatch) {
+    statsHtml += `<span class="stat-pill" style="background: rgba(99, 102, 241, 0.15); color: #818CF8; border-color: rgba(99, 102, 241, 0.3);">📦 File ${state.selectedResultIdx + 1} of ${results.length}</span>`;
+  }
 
   if (isLatex) {
     if (result.originalSize) {
@@ -1603,19 +1900,17 @@ function showToolResult(tool, result) {
 
   if (statsEl) statsEl.innerHTML = statsHtml;
 
-  // Preview
+  // Preview Area
   const previewEl = document.getElementById('tool-result-preview');
-  const copyBtn = document.getElementById('tool-copy-btn');
 
   if (previewEl) {
     previewEl.classList.toggle('has-custom-preview', isLatex);
 
-    if (result.blob && (result.blob.type.startsWith('image/') || result.filename?.match(/\.(png|jpg|jpeg|webp|gif|bmp|svg|ico|avif)$/i))) {
+    if (result.blob && (result.blob.type?.startsWith('image/') || result.filename?.match(/\.(png|jpg|jpeg|webp|gif|bmp|svg|ico|avif)$/i))) {
       // Image preview
       const imgUrl = URL.createObjectURL(result.blob);
-      previewEl.innerHTML = `<img src="${imgUrl}" alt="Converted image" style="max-width: 100%; max-height: 400px; object-fit: contain; border-radius: 8px;" />`;
-      if (copyBtn) copyBtn.style.display = 'none';
-    } else if (result.blob && (result.blob.type.startsWith('audio/') || result.filename?.match(/\.(mp3|wav|ogg|flac|aac|m4a)$/i))) {
+      previewEl.innerHTML = `<img src="${imgUrl}" alt="${result.filename}" style="max-width: 100%; max-height: 440px; object-fit: contain; border-radius: 8px;" />`;
+    } else if (result.blob && (result.blob.type?.startsWith('audio/') || result.filename?.match(/\.(mp3|wav|ogg|flac|aac|m4a)$/i))) {
       // Audio preview
       const audioUrl = URL.createObjectURL(result.blob);
       previewEl.innerHTML = `
@@ -1625,8 +1920,7 @@ function showToolResult(tool, result) {
           <audio controls src="${audioUrl}" style="width: 100%; max-width: 440px; margin-top: 8px;"></audio>
         </div>
       `;
-      if (copyBtn) copyBtn.style.display = 'none';
-    } else if (result.blob && (result.blob.type.startsWith('video/') || result.filename?.match(/\.(mp4|webm|mov|avi|mkv)$/i))) {
+    } else if (result.blob && (result.blob.type?.startsWith('video/') || result.filename?.match(/\.(mp4|webm|mov|avi|mkv)$/i))) {
       // Video preview
       const videoUrl = URL.createObjectURL(result.blob);
       previewEl.innerHTML = `
@@ -1634,7 +1928,6 @@ function showToolResult(tool, result) {
           <video controls src="${videoUrl}" style="max-width: 100%; max-height: 420px; border-radius: 8px; background: #000; box-shadow: 0 4px 20px rgba(0,0,0,0.4);"></video>
         </div>
       `;
-      if (copyBtn) copyBtn.style.display = 'none';
     } else if (result.blob && (result.blob.type === 'application/pdf' || result.filename?.endsWith('.pdf'))) {
       // Live PDF preview via iframe
       const pdfUrl = URL.createObjectURL(result.blob);
@@ -1655,7 +1948,6 @@ function showToolResult(tool, result) {
 
       previewEl.innerHTML = `
         <div class="latex-result-card">
-          <!-- Overleaf Project Integration Strip -->
           <div class="latex-card-banner">
             <div class="latex-banner-left">
               <div class="latex-overleaf-icon">🍃</div>
@@ -1679,7 +1971,6 @@ function showToolResult(tool, result) {
             </div>
           </div>
 
-          <!-- Code View with Tab Header & Quick Copy -->
           <div class="latex-code-container">
             <div class="latex-code-header">
               <div class="latex-file-tab">
@@ -1696,7 +1987,6 @@ function showToolResult(tool, result) {
             <pre class="latex-code-pre"><code class="language-latex">${escaped}</code></pre>
           </div>
 
-          <!-- Quick Overleaf Guide Strip -->
           <div class="latex-tips-card">
             <span class="latex-tips-icon">💡</span>
             <div class="latex-tips-content">
@@ -1706,12 +1996,6 @@ function showToolResult(tool, result) {
         </div>
       `;
 
-      if (copyBtn) {
-        copyBtn.style.display = 'inline-flex';
-        copyBtn.innerHTML = '<span>📋 Copy LaTeX Code</span>';
-      }
-
-      // Inline copy button
       const inlineCopy = document.getElementById('latex-inline-copy');
       if (inlineCopy) {
         inlineCopy.addEventListener('click', async () => {
@@ -1732,7 +2016,6 @@ function showToolResult(tool, result) {
         });
       }
 
-      // Hook up Overleaf ZIP download button
       const zipBtn = document.getElementById('tool-export-overleaf-zip');
       if (zipBtn && result.overleafZipBlob) {
         zipBtn.addEventListener('click', () => {
@@ -1762,7 +2045,6 @@ function showToolResult(tool, result) {
           <pre style="margin: 0;">${escaped.substring(0, 3000)}${escaped.length > 3000 ? '\n\n... (truncated)' : ''}</pre>
         </div>
       `;
-      if (copyBtn) copyBtn.style.display = 'inline-flex';
       const openStudioBtn = document.getElementById('tool-open-studio-btn');
       if (openStudioBtn) {
         openStudioBtn.addEventListener('click', () => {
@@ -1787,14 +2069,111 @@ function showToolResult(tool, result) {
           <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0;">File generated successfully in memory. Click Download below to save to your device.</p>
         </div>
       `;
-      if (copyBtn) copyBtn.style.display = 'none';
     }
   }
 
-  // Download button text
-  const downloadText = document.getElementById('tool-download-text');
-  if (downloadText) {
-    downloadText.textContent = isLatex ? 'Download LaTeX (.tex)' : `Download ${result.filename}`;
+  // Result Actions (Sticky Bottom Bar)
+  const actionsEl = document.querySelector('.result-actions');
+  if (actionsEl) {
+    if (isBatch) {
+      actionsEl.innerHTML = `
+        <button id="tool-download-zip-btn" type="button" class="btn btn-primary result-zip-btn" title="Download all ${results.length} converted files bundled in a single ZIP">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span>📦 Download All as ZIP (${results.length} Files • ${formatFileSize(state.batchZipBlob?.size || 0)})</span>
+        </button>
+        <button id="tool-download-single-btn" type="button" class="btn btn-secondary result-download-single-btn" title="Download only the currently selected file">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span>Download ${result.filename}</span>
+        </button>
+        <button id="tool-convert-another-btn" type="button" class="btn btn-secondary btn-sm">
+          <span>↻ Convert Another</span>
+        </button>
+      `;
+
+      const zipBtn = document.getElementById('tool-download-zip-btn');
+      if (zipBtn) {
+        zipBtn.addEventListener('click', () => {
+          playClickSound();
+          if (state.batchZipBlob) {
+            downloadBlob(state.batchZipBlob, state.batchZipFilename || 'superconvert-batch.zip');
+            playSuccessChime();
+            fireCelebration();
+          }
+        });
+      }
+
+      const singleBtn = document.getElementById('tool-download-single-btn');
+      if (singleBtn) {
+        singleBtn.addEventListener('click', () => {
+          playClickSound();
+          if (result.blob) {
+            downloadBlob(result.blob, result.filename);
+            playSuccessChime();
+            fireCelebration();
+          }
+        });
+      }
+
+      const anotherBtn = document.getElementById('tool-convert-another-btn');
+      if (anotherBtn) {
+        anotherBtn.addEventListener('click', () => {
+          playClickSound();
+          const toolObj = getToolById(state.activeTool);
+          if (toolObj) activateUniversalTool(toolObj);
+        });
+      }
+    } else {
+      actionsEl.innerHTML = `
+        <button id="tool-download-btn" type="button" class="btn btn-primary btn-lg result-download-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span id="tool-download-text">${isLatex ? 'Download LaTeX (.tex)' : `Download ${result.filename}`}</span>
+        </button>
+        <button id="tool-copy-btn" type="button" class="btn btn-secondary btn-sm" style="${(result.preview || isLatex) ? 'display: inline-flex;' : 'display: none;'}">
+          <span>📋 Copy to Clipboard</span>
+        </button>
+        <button id="tool-convert-another-btn" type="button" class="btn btn-secondary btn-sm">
+          <span>↻ Convert Another</span>
+        </button>
+      `;
+
+      const dlBtn = document.getElementById('tool-download-btn');
+      if (dlBtn) {
+        dlBtn.addEventListener('click', () => {
+          playClickSound();
+          if (result.blob) {
+            downloadBlob(result.blob, result.filename);
+            playSuccessChime();
+            fireCelebration();
+          }
+        });
+      }
+
+      const cpBtn = document.getElementById('tool-copy-btn');
+      if (cpBtn) {
+        cpBtn.addEventListener('click', async () => {
+          playClickSound();
+          const textToCopy = result.latex || result.preview || '';
+          if (textToCopy) {
+            await navigator.clipboard.writeText(textToCopy);
+            cpBtn.innerHTML = '<span>✓ Copied!</span>';
+            setTimeout(() => { cpBtn.innerHTML = '<span>📋 Copy to Clipboard</span>'; }, 2000);
+          }
+        });
+      }
+
+      const anotherBtn = document.getElementById('tool-convert-another-btn');
+      if (anotherBtn) {
+        anotherBtn.addEventListener('click', () => {
+          playClickSound();
+          const toolObj = getToolById(state.activeTool);
+          if (toolObj) activateUniversalTool(toolObj);
+        });
+      }
+    }
   }
 
   // Update left sticky action text so newbie knows they can re-convert or tweak settings anytime

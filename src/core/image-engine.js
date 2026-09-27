@@ -30,9 +30,12 @@ function getMimeType(format) {
     '.jpg': 'image/jpeg',
     '.jpeg': 'image/jpeg',
     '.png': 'image/png',
-    '.webp': 'image/webp'
+    '.webp': 'image/webp',
+    '.gif': 'image/gif',
+    '.avif': 'image/avif',
+    '.bmp': 'image/bmp'
   };
-  return map[format] || 'image/png';
+  return map[format?.toLowerCase()] || 'image/png';
 }
 
 /**
@@ -40,11 +43,21 @@ function getMimeType(format) {
  */
 function canvasToBlob(canvas, mimeType, quality = 0.92) {
   return new Promise((resolve) => {
-    canvas.toBlob(
-      (blob) => resolve(blob),
-      mimeType,
-      quality
-    );
+    try {
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            canvas.toBlob((fb) => resolve(fb), 'image/png', quality);
+          }
+        },
+        mimeType,
+        quality
+      );
+    } catch {
+      canvas.toBlob((fb) => resolve(fb), 'image/png', quality);
+    }
   });
 }
 
@@ -357,10 +370,12 @@ function canvasToSvgBlob(canvas) {
  * Convert image format (PNG, JPG, WEBP, BMP, TIFF, SVG, GIF, AVIF, ICO)
  */
 export async function convertImageFormat(file, targetFormat, settings = {}) {
-  const quality = (settings.quality || 90) / 100;
+  // Respect user-selected Output Format setting if chosen
+  const effectiveTarget = settings.targetFormat || targetFormat || '.png';
+  const cleanTarget = effectiveTarget.startsWith('.') ? effectiveTarget.toLowerCase() : `.${effectiveTarget.toLowerCase()}`;
+  const quality = (settings.quality || 92) / 100;
   const bgColor = settings.bgColor || '#ffffff';
   const img = await loadImage(file);
-  const cleanTarget = targetFormat.startsWith('.') ? targetFormat.toLowerCase() : `.${targetFormat.toLowerCase()}`;
   
   let scale = 1.0;
   if (typeof settings.scale === 'string') {
@@ -368,14 +383,16 @@ export async function convertImageFormat(file, targetFormat, settings = {}) {
     else if (settings.scale.includes('50%')) scale = 0.50;
     else if (settings.scale.includes('25%')) scale = 0.25;
   } else if (typeof settings.scale === 'number') {
-    scale = settings.scale;
+    scale = settings.scale <= 1 ? settings.scale : settings.scale / 100;
   }
 
   let rotationAngle = 0;
   if (typeof settings.rotation === 'string') {
-    if (settings.rotation.includes('90°')) rotationAngle = 90;
-    else if (settings.rotation.includes('180°')) rotationAngle = 180;
-    else if (settings.rotation.includes('270°')) rotationAngle = 270;
+    if (settings.rotation.includes('90°') || settings.rotation.includes('90')) rotationAngle = 90;
+    else if (settings.rotation.includes('180°') || settings.rotation.includes('180')) rotationAngle = 180;
+    else if (settings.rotation.includes('270°') || settings.rotation.includes('270')) rotationAngle = 270;
+  } else if (typeof settings.rotation === 'number') {
+    rotationAngle = settings.rotation % 360;
   }
 
   const w = Math.max(1, Math.round(img.naturalWidth * scale));
@@ -391,18 +408,13 @@ export async function convertImageFormat(file, targetFormat, settings = {}) {
   }
   
   const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
   
   // Fill background for JPEG / BMP (no alpha channel)
   if (['.jpg', '.jpeg', '.bmp'].includes(cleanTarget)) {
     ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-  }
-
-  if (settings.colorFilter) {
-    if (settings.colorFilter.includes('Grayscale')) ctx.filter = 'grayscale(100%)';
-    else if (settings.colorFilter.includes('Sepia')) ctx.filter = 'sepia(100%)';
-    else if (settings.colorFilter.includes('High Contrast')) ctx.filter = 'contrast(160%)';
-    else if (settings.colorFilter.includes('Invert')) ctx.filter = 'invert(100%)';
   }
 
   ctx.save();
@@ -418,6 +430,42 @@ export async function convertImageFormat(file, targetFormat, settings = {}) {
   }
   ctx.drawImage(img, 0, 0, w, h);
   ctx.restore();
+
+  // Apply Color Filter (Pixel-perfect manipulation guaranteed across all browsers and canvas exports)
+  if (settings.colorFilter && !settings.colorFilter.includes('None') && !settings.colorFilter.includes('Original')) {
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imgData.data;
+
+    if (settings.colorFilter.includes('Grayscale') || settings.colorFilter.includes('B&W')) {
+      for (let i = 0; i < data.length; i += 4) {
+        const gray = Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
+        data[i] = gray;
+        data[i + 1] = gray;
+        data[i + 2] = gray;
+      }
+    } else if (settings.colorFilter.includes('Sepia')) {
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i], g = data[i + 1], b = data[i + 2];
+        data[i] = Math.min(255, Math.round(0.393 * r + 0.769 * g + 0.189 * b));
+        data[i + 1] = Math.min(255, Math.round(0.349 * r + 0.686 * g + 0.168 * b));
+        data[i + 2] = Math.min(255, Math.round(0.272 * r + 0.534 * g + 0.131 * b));
+      }
+    } else if (settings.colorFilter.includes('High Contrast')) {
+      const factor = (259 * (128 + 65)) / (255 * (259 - 65));
+      for (let i = 0; i < data.length; i += 4) {
+        data[i] = Math.min(255, Math.max(0, Math.round(factor * (data[i] - 128) + 128)));
+        data[i + 1] = Math.min(255, Math.max(0, Math.round(factor * (data[i + 1] - 128) + 128)));
+        data[i + 2] = Math.min(255, Math.max(0, Math.round(factor * (data[i + 2] - 128) + 128)));
+      }
+    } else if (settings.colorFilter.includes('Invert')) {
+      for (let i = 0; i < data.length; i += 4) {
+        data[i] = 255 - data[i];
+        data[i + 1] = 255 - data[i + 1];
+        data[i + 2] = 255 - data[i + 2];
+      }
+    }
+    ctx.putImageData(imgData, 0, 0);
+  }
   
   let blob;
   if (cleanTarget === '.bmp') {
@@ -443,7 +491,8 @@ export async function convertImageFormat(file, targetFormat, settings = {}) {
     blob,
     filename: `${baseName}${cleanTarget}`,
     originalSize: file.size,
-    outputSize: blob.size
+    outputSize: blob.size,
+    dimensions: `${canvas.width}×${canvas.height}`
   };
 }
 
@@ -451,8 +500,8 @@ export async function convertImageFormat(file, targetFormat, settings = {}) {
  * Resize image to specific dimensions
  */
 export async function resizeImage(file, settings = {}) {
-  const targetWidth = settings.width || 800;
-  const targetHeight = settings.height || 600;
+  const targetWidth = Number(settings.width) || 800;
+  const targetHeight = Number(settings.height) || 600;
   const maintainAspect = settings.maintainAspect !== false;
   const img = await loadImage(file);
   
@@ -461,8 +510,8 @@ export async function resizeImage(file, settings = {}) {
   
   if (maintainAspect) {
     const ratio = Math.min(targetWidth / img.naturalWidth, targetHeight / img.naturalHeight);
-    newWidth = Math.round(img.naturalWidth * ratio);
-    newHeight = Math.round(img.naturalHeight * ratio);
+    newWidth = Math.max(1, Math.round(img.naturalWidth * ratio));
+    newHeight = Math.max(1, Math.round(img.naturalHeight * ratio));
   }
   
   const canvas = document.createElement('canvas');
@@ -470,18 +519,33 @@ export async function resizeImage(file, settings = {}) {
   canvas.height = newHeight;
   
   const ctx = canvas.getContext('2d');
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = 'high';
+  
+  // Resampling filter
+  const filter = settings.resampleFilter || 'High Quality (Bicubic)';
+  if (filter.includes('Pixelated')) {
+    ctx.imageSmoothingEnabled = false;
+  } else {
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = filter.includes('Smooth') ? 'medium' : 'high';
+  }
+
+  const cleanTarget = (settings.targetFormat || getExtension(file.name)).toLowerCase();
+  if (['.jpg', '.jpeg', '.bmp'].includes(cleanTarget)) {
+    ctx.fillStyle = settings.bgColor || '#ffffff';
+    ctx.fillRect(0, 0, newWidth, newHeight);
+  }
+
   ctx.drawImage(img, 0, 0, newWidth, newHeight);
   
-  const ext = getExtension(file.name);
-  const mimeType = getMimeType(ext);
+  const mimeType = getMimeType(cleanTarget);
   const blob = await canvasToBlob(canvas, mimeType, 0.95);
   const baseName = file.name.replace(/\.[^.]+$/, '');
   
   return {
     blob,
-    filename: `${baseName}-${newWidth}x${newHeight}${ext}`,
+    filename: `${baseName}-${newWidth}x${newHeight}${cleanTarget}`,
+    originalSize: file.size,
+    outputSize: blob.size,
     originalDimensions: { width: img.naturalWidth, height: img.naturalHeight },
     newDimensions: { width: newWidth, height: newHeight }
   };
@@ -497,37 +561,53 @@ export async function cropImage(file, settings = {}) {
   let cropX = 0, cropY = 0, cropW = img.naturalWidth, cropH = img.naturalHeight;
   
   if (cropRatio !== 'Free') {
-    const [rw, rh] = cropRatio.split(':').map(Number);
-    const targetRatio = rw / rh;
-    const imgRatio = img.naturalWidth / img.naturalHeight;
-    
-    if (imgRatio > targetRatio) {
-      cropW = Math.round(img.naturalHeight * targetRatio);
-      cropH = img.naturalHeight;
-      cropX = Math.round((img.naturalWidth - cropW) / 2);
-    } else {
-      cropW = img.naturalWidth;
-      cropH = Math.round(img.naturalWidth / targetRatio);
-      cropY = Math.round((img.naturalHeight - cropH) / 2);
+    const parts = cropRatio.split(':').map(Number);
+    if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+      const targetRatio = parts[0] / parts[1];
+      const imgRatio = img.naturalWidth / img.naturalHeight;
+      
+      if (imgRatio > targetRatio) {
+        cropW = Math.round(img.naturalHeight * targetRatio);
+        cropH = img.naturalHeight;
+        cropX = Math.round((img.naturalWidth - cropW) / 2);
+      } else {
+        cropW = img.naturalWidth;
+        cropH = Math.round(img.naturalWidth / targetRatio);
+        cropY = Math.round((img.naturalHeight - cropH) / 2);
+      }
     }
   }
+
+  const finalW = (settings.width && Number(settings.width) > 0) ? Number(settings.width) : cropW;
+  const finalH = (settings.height && Number(settings.height) > 0) ? Number(settings.height) : cropH;
   
   const canvas = document.createElement('canvas');
-  canvas.width = cropW;
-  canvas.height = cropH;
+  canvas.width = finalW;
+  canvas.height = finalH;
   
   const ctx = canvas.getContext('2d');
-  ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+
+  const cleanTarget = (settings.targetFormat || getExtension(file.name)).toLowerCase();
+  if (['.jpg', '.jpeg', '.bmp'].includes(cleanTarget)) {
+    ctx.fillStyle = settings.bgColor || '#ffffff';
+    ctx.fillRect(0, 0, finalW, finalH);
+  }
+
+  ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, finalW, finalH);
   
-  const ext = getExtension(file.name);
-  const mimeType = getMimeType(ext);
+  const mimeType = getMimeType(cleanTarget);
   const blob = await canvasToBlob(canvas, mimeType, 0.95);
   const baseName = file.name.replace(/\.[^.]+$/, '');
   
   return {
     blob,
-    filename: `${baseName}-cropped${ext}`,
-    dimensions: { width: cropW, height: cropH }
+    filename: `${baseName}-cropped${cleanTarget}`,
+    originalSize: file.size,
+    outputSize: blob.size,
+    originalDimensions: { width: img.naturalWidth, height: img.naturalHeight },
+    newDimensions: { width: finalW, height: finalH }
   };
 }
 
@@ -622,7 +702,7 @@ export async function addWatermark(file, settings = {}) {
     fontSize = Math.max(20, Math.round(canvas.width / baseRatio));
   }
   ctx.font = `bold ${fontSize}px "Plus Jakarta Sans", -apple-system, sans-serif`;
-  ctx.fillStyle = '#000000';
+  ctx.fillStyle = settings.watermarkColor || '#000000';
   
   if (isRepeat) {
     ctx.save();
@@ -651,15 +731,32 @@ export async function addWatermark(file, settings = {}) {
   
   ctx.globalAlpha = 1;
   
-  const ext = getExtension(file.name);
+  const ext = settings.targetFormat || getExtension(file.name);
   const mimeType = getMimeType(ext);
   const blob = await canvasToBlob(canvas, mimeType, 0.95);
   const baseName = file.name.replace(/\.[^.]+$/, '');
   
   return {
     blob,
-    filename: `${baseName}-watermarked${ext}`
+    filename: `${baseName}-watermarked${ext}`,
+    originalSize: file.size,
+    outputSize: blob.size,
+    dimensions: `${canvas.width}×${canvas.height}`
   };
+}
+
+/**
+ * Apply general image effect (Watermark, Grayscale, Sepia, High Contrast, Invert)
+ */
+export async function applyImageEffect(file, settings = {}) {
+  const effect = settings.effect || 'Watermark';
+  if (effect === 'Watermark') {
+    return addWatermark(file, settings);
+  }
+  return convertImageFormat(file, settings.targetFormat || getExtension(file.name), {
+    ...settings,
+    colorFilter: effect
+  });
 }
 
 /**
@@ -684,38 +781,35 @@ export async function processImageTool(toolId, file, settings = {}) {
       return resizeImage(file, settings);
     }
     case 'image-effects': {
-      if (settings.effect === 'Watermark') {
-        return addWatermark(file, settings);
-      }
-      return grayscaleImage(file);
+      return applyImageEffect(file, settings);
     }
 
-    // Dedicated popular formats
+    // Dedicated popular formats - respect user's outputFormat choice from settings!
     case 'png-to-jpg':
-      return convertImageFormat(file, '.jpg', settings);
+      return convertImageFormat(file, settings.targetFormat || '.jpg', settings);
     case 'jpg-to-png':
-      return convertImageFormat(file, '.png', settings);
+      return convertImageFormat(file, settings.targetFormat || '.png', settings);
     case 'webp-to-png':
-      return convertImageFormat(file, '.png', settings);
+      return convertImageFormat(file, settings.targetFormat || '.png', settings);
     case 'png-to-webp':
-      return convertImageFormat(file, '.webp', settings);
+      return convertImageFormat(file, settings.targetFormat || '.webp', settings);
     case 'png-to-ico':
     case 'image-to-ico':
       return convertImageToIco(file, settings);
     case 'png-to-bmp':
     case 'image-to-bmp':
-      return convertImageFormat(file, '.bmp', settings);
+      return convertImageFormat(file, settings.targetFormat || '.bmp', settings);
     case 'png-to-tiff':
     case 'image-to-tiff':
-      return convertImageFormat(file, '.tiff', settings);
+      return convertImageFormat(file, settings.targetFormat || '.tiff', settings);
     case 'image-to-svg':
-      return convertImageFormat(file, '.svg', settings);
+      return convertImageFormat(file, settings.targetFormat || '.svg', settings);
     case 'image-to-gif':
-      return convertImageFormat(file, '.gif', settings);
+      return convertImageFormat(file, settings.targetFormat || '.gif', settings);
     case 'image-crop':
       return cropImage(file, settings);
     case 'image-grayscale':
-      return grayscaleImage(file);
+      return convertImageFormat(file, settings.targetFormat || getExtension(file.name), { ...settings, colorFilter: 'Grayscale' });
     case 'image-watermark':
       return addWatermark(file, settings);
     default: {

@@ -213,6 +213,9 @@ export function renderToolConverter() {
                   </div>
                 </div>
 
+                <!-- Batch Converted Files Selector Tabs -->
+                <div id="tool-result-batch-tabs" class="result-files-tabs-wrap" style="display: none;"></div>
+
                 <!-- Stats Row -->
                 <div id="tool-result-stats" class="result-stats"></div>
 
